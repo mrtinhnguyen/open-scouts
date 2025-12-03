@@ -3,6 +3,7 @@
 import { config } from 'dotenv';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 import pg from 'pg';
 
 const { Client } = pg;
@@ -28,7 +29,8 @@ async function runMigrations() {
     const migrations = [
       'supabase/migrations/00000000000000_initial_schema.sql',
       'supabase/migrations/00000000000001_add_auth.sql',
-      'supabase/migrations/20251203000000_add_firecrawl_integration.sql'
+      'supabase/migrations/20251203000000_add_firecrawl_integration.sql',
+      'supabase/migrations/20251203100000_remove_notification_email.sql'
     ];
 
     for (const migrationPath of migrations) {
@@ -279,11 +281,120 @@ async function runMigrations() {
     console.log('      npx supabase secrets set FIRECRAWL_API_KEY=your-partner-key');
     console.log('   3. Users will automatically get their own keys on signup\n');
     console.log('   Note: Partner keys are obtained by contacting Firecrawl directly.\n');
+
+    // Sync Edge Function Secrets
+    console.log('🔑 Edge Function Secrets');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    await syncEdgeFunctionSecrets();
+
   } catch (error) {
     console.error('❌ Error:', error.message);
     process.exit(1);
   } finally {
     await client.end();
+  }
+}
+
+/**
+ * Syncs environment variables from .env to Supabase Edge Function secrets
+ */
+async function syncEdgeFunctionSecrets() {
+  // Define which secrets to sync (env var name -> secret name)
+  const secretsToSync = [
+    { env: 'OPENAI_API_KEY', name: 'OPENAI_API_KEY', required: true },
+    { env: 'FIRECRAWL_API_KEY', name: 'FIRECRAWL_API_KEY', required: true },
+    { env: 'RESEND_API_KEY', name: 'RESEND_API_KEY', required: false },
+    { env: 'RESEND_FROM_EMAIL', name: 'RESEND_FROM_EMAIL', required: false },
+  ];
+
+  const secretsToSet = [];
+  const missingRequired = [];
+  const missingOptional = [];
+
+  // Check which secrets are available
+  for (const secret of secretsToSync) {
+    const value = process.env[secret.env];
+    if (value) {
+      secretsToSet.push({ name: secret.name, value });
+    } else if (secret.required) {
+      missingRequired.push(secret.env);
+    } else {
+      missingOptional.push(secret.env);
+    }
+  }
+
+  // Report missing secrets
+  if (missingRequired.length > 0) {
+    console.log('⚠️  Missing required secrets in .env:');
+    missingRequired.forEach(name => console.log(`   - ${name}`));
+    console.log('   Add these to your .env file and run setup again.\n');
+  }
+
+  if (missingOptional.length > 0) {
+    console.log('ℹ️  Optional secrets not configured:');
+    missingOptional.forEach(name => console.log(`   - ${name}`));
+    console.log('');
+  }
+
+  // Sync available secrets
+  if (secretsToSet.length > 0) {
+    console.log('📤 Syncing secrets to Supabase Edge Functions...\n');
+
+    // Check if Supabase CLI is available and linked
+    try {
+      execSync('npx supabase --version', { stdio: 'pipe' });
+    } catch {
+      console.log('⚠️  Supabase CLI not available. Please run manually:');
+      secretsToSet.forEach(({ name }) => {
+        console.log(`   npx supabase secrets set ${name}=<value>`);
+      });
+      console.log('');
+      return;
+    }
+
+    // Try to sync each secret
+    let successCount = 0;
+    let failedSecrets = [];
+
+    for (const { name, value } of secretsToSet) {
+      try {
+        // Use execSync with the secret value - be careful not to log it
+        execSync(`npx supabase secrets set ${name}="${value.replace(/"/g, '\\"')}"`, {
+          stdio: 'pipe',
+          cwd: process.cwd(),
+        });
+        console.log(`   ✅ ${name}`);
+        successCount++;
+      } catch (error) {
+        // Check if it's a "not linked" error
+        if (error.message?.includes('not linked') || error.stderr?.toString().includes('not linked')) {
+          console.log('⚠️  Supabase project not linked. Run this first:');
+          console.log('   npx supabase link --project-ref <your-project-ref>\n');
+          console.log('   Then run setup:db again to sync secrets.\n');
+          return;
+        }
+        failedSecrets.push(name);
+        console.log(`   ❌ ${name} - failed to set`);
+      }
+    }
+
+    console.log('');
+
+    if (successCount > 0) {
+      console.log(`✅ Synced ${successCount} secret(s) to Supabase Edge Functions!\n`);
+    }
+
+    if (failedSecrets.length > 0) {
+      console.log('⚠️  Some secrets failed to sync. Set them manually:');
+      failedSecrets.forEach(name => {
+        console.log(`   npx supabase secrets set ${name}=<value>`);
+      });
+      console.log('');
+    }
+  } else {
+    console.log('⚠️  No secrets found in .env to sync.');
+    console.log('   Add your API keys to .env and run setup again.\n');
   }
 }
 

@@ -17,9 +17,11 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Open Scouts <onboarding@resend.dev>";
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       throw new Error("Supabase configuration missing");
     }
 
@@ -35,24 +37,41 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Fetch user's notification email from user_preferences
-    const { data: preferences, error: prefError } = await supabase
-      .from("user_preferences")
-      .select("notification_email")
-      .eq("id", "00000000-0000-0000-0000-000000000001")
-      .single();
-
-    if (prefError) {
-      throw new Error(`Error fetching user preferences: ${prefError.message}`);
+    // Get the authorization header to identify the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authorization header required" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
     }
 
-    // Check if user has set an email
-    if (!preferences?.notification_email) {
+    // Create a client with the user's JWT to get their identity
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Get the authenticated user
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Not authenticated" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    // Use the user's account email
+    if (!user.email) {
       return new Response(
         JSON.stringify({
-          error: "No notification email set in settings. Please add your email in Settings first."
+          error: "Your account doesn't have an email address configured."
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -61,7 +80,7 @@ serve(async (req) => {
       );
     }
 
-    const userEmail = preferences.notification_email;
+    const userEmail = user.email;
     console.log(`Sending test email to: ${userEmail}`);
 
     // Create test email HTML
@@ -126,7 +145,7 @@ serve(async (req) => {
                 This is a test email sent from Open Scouts.
               </p>
               <p style="margin: 0; color: #999; font-size: 13px;">
-                <a href="https://openscout.dev/settings" style="color: #FF4C00; text-decoration: none;">Manage notification settings</a>
+                Notifications are sent to your account email.
               </p>
             </td>
           </tr>
@@ -140,7 +159,7 @@ serve(async (req) => {
     `.trim();
 
     const emailPayload = {
-      from: "Open Scouts <onboarding@resend.dev>",
+      from: RESEND_FROM_EMAIL,
       to: userEmail,
       subject: "Test Email - Open Scouts Notifications",
       html: emailHtml,
@@ -170,7 +189,7 @@ serve(async (req) => {
             // Extract the allowed email from the error message
             const emailMatch = errorJson.message.match(/\(([^)]+)\)/);
             const allowedEmail = emailMatch ? emailMatch[1] : "your Resend account email";
-            userFriendlyError = `For testing without a verified domain, Resend only allows sending to ${allowedEmail}. Either use that email in Settings, or verify a custom domain at resend.com/domains.`;
+            userFriendlyError = `Resend requires a verified domain to send emails. Without one, emails can only be sent to ${allowedEmail}. Please verify a custom domain at resend.com/domains.`;
           } else {
             userFriendlyError = errorJson.message;
           }

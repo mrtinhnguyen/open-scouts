@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/ui/shadcn/button";
-import { Input } from "@/components/ui/shadcn-default/input";
 import { Skeleton } from "@/components/ui/shadcn/skeleton";
 import {
   Check,
@@ -30,13 +29,8 @@ interface FirecrawlInfo {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const [email, setEmail] = useState("");
+  const { user, session } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">(
-    "idle",
-  );
   const [sendingTest, setSendingTest] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">(
     "idle",
@@ -48,7 +42,7 @@ export default function SettingsPage() {
   const [regeneratingKey, setRegeneratingKey] = useState(false);
   const [regenerateMessage, setRegenerateMessage] = useState("");
 
-  // Load current preferences and Firecrawl info
+  // Load Firecrawl info
   useEffect(() => {
     const loadPreferences = async () => {
       if (!user?.id) {
@@ -60,12 +54,11 @@ export default function SettingsPage() {
       try {
         const { data } = await supabase
           .from("user_preferences")
-          .select("notification_email, firecrawl_api_key, firecrawl_key_status, firecrawl_key_created_at, firecrawl_key_error")
+          .select("firecrawl_api_key, firecrawl_key_status, firecrawl_key_created_at, firecrawl_key_error")
           .eq("user_id", user.id)
           .maybeSingle();
 
         if (data) {
-          setEmail(data.notification_email || "");
           setFirecrawlInfo({
             status: data.firecrawl_key_status || "pending",
             hasKey: !!data.firecrawl_api_key,
@@ -90,45 +83,6 @@ export default function SettingsPage() {
     loadPreferences();
   }, [user?.id]);
 
-  const savePreferences = async () => {
-    if (!user?.id) return;
-
-    setSaving(true);
-    setSaveStatus("idle");
-
-    // Validate email if provided
-    if (email && !isValidEmail(email)) {
-      setSaveStatus("error");
-      setSaving(false);
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from("user_preferences").upsert({
-        user_id: user.id,
-        notification_email: email || null,
-      }, {
-        onConflict: "user_id",
-      });
-
-      if (error) {
-        setSaveStatus("error");
-      } else {
-        setSaveStatus("success");
-        setTimeout(() => setSaveStatus("idle"), 3000);
-      }
-    } catch {
-      setSaveStatus("error");
-    }
-
-    setSaving(false);
-  };
-
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const sendTestEmail = async () => {
     setSendingTest(true);
     setTestStatus("idle");
@@ -142,6 +96,7 @@ export default function SettingsPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
           },
         },
       );
@@ -427,10 +382,10 @@ export default function SettingsPage() {
               <div className="space-y-24">
                 <div>
                   <Skeleton className="h-16 w-128 mb-12" />
-                  <Skeleton className="h-44 w-full rounded-8" />
-                  <Skeleton className="h-14 w-256 mt-8" />
+                  <Skeleton className="h-20 w-256" />
+                  <Skeleton className="h-14 w-full mt-8" />
                 </div>
-                <Skeleton className="h-40 w-120 rounded-8" />
+                <Skeleton className="h-40 w-140 rounded-8" />
               </div>
             </div>
           ) : (
@@ -438,106 +393,60 @@ export default function SettingsPage() {
               <div className="p-24 space-y-24">
                 {/* Email Notification Section */}
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-label-medium font-semibold text-accent-black mb-8"
-                  >
-                    Notification Email
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full"
-                    disabled={saving}
-                  />
-                  <p className="text-body-small text-black-alpha-48 mt-8">
-                    Receive email notifications when your scouts find new
-                    results
+                  <h3 className="text-label-medium font-semibold text-accent-black mb-8">
+                    Email Notifications
+                  </h3>
+                  <div className="flex items-center gap-8 mb-8">
+                    <Mail className="w-16 h-16 text-black-alpha-48" />
+                    <span className="text-body-medium text-accent-black">
+                      {user?.email}
+                    </span>
+                  </div>
+                  <p className="text-body-small text-black-alpha-48">
+                    Scout notifications will be sent to your account email when
+                    your scouts find new results.
                   </p>
 
                   {/* Test Email Button */}
-                  {email && isValidEmail(email) && (
-                    <div className="mt-16">
-                      <Button
-                        onClick={sendTestEmail}
-                        disabled={sendingTest}
-                        variant="secondary"
-                        className="flex items-center gap-8"
-                      >
-                        {sendingTest ? (
-                          <>
-                            <div className="animate-spin rounded-full h-16 w-16 border-2 border-black-alpha-32 border-t-transparent" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Mail className="w-16 h-16" />
-                            Send Test Email
-                          </>
-                        )}
-                      </Button>
-
-                      {testMessage && (
-                        <div
-                          className={`flex items-start gap-8 mt-12 p-12 rounded-8 ${
-                            testStatus === "success"
-                              ? "bg-accent-forest/10 text-accent-forest border border-accent-forest/20"
-                              : "bg-accent-crimson/10 text-accent-crimson border border-accent-crimson/20"
-                          }`}
-                        >
-                          {testStatus === "success" ? (
-                            <Check className="w-16 h-16 mt-2 shrink-0" />
-                          ) : (
-                            <AlertCircle className="w-16 h-16 mt-2 shrink-0" />
-                          )}
-                          <span className="text-body-small leading-relaxed">
-                            {testMessage}
-                          </span>
-                        </div>
+                  <div className="mt-16">
+                    <Button
+                      onClick={sendTestEmail}
+                      disabled={sendingTest}
+                      variant="secondary"
+                      className="flex items-center gap-8"
+                    >
+                      {sendingTest ? (
+                        <>
+                          <div className="animate-spin rounded-full h-16 w-16 border-2 border-black-alpha-32 border-t-transparent" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-16 h-16" />
+                          Send Test Email
+                        </>
                       )}
-                    </div>
-                  )}
-                </div>
+                    </Button>
 
-                {/* Save Button */}
-                <div className="flex items-center gap-12">
-                  <Button
-                    onClick={savePreferences}
-                    disabled={saving}
-                    className="flex items-center gap-8"
-                  >
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-16 w-16 border-2 border-white border-t-transparent" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Preferences"
+                    {testMessage && (
+                      <div
+                        className={`flex items-start gap-8 mt-12 p-12 rounded-8 ${
+                          testStatus === "success"
+                            ? "bg-accent-forest/10 text-accent-forest border border-accent-forest/20"
+                            : "bg-accent-crimson/10 text-accent-crimson border border-accent-crimson/20"
+                        }`}
+                      >
+                        {testStatus === "success" ? (
+                          <Check className="w-16 h-16 mt-2 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-16 h-16 mt-2 shrink-0" />
+                        )}
+                        <span className="text-body-small leading-relaxed">
+                          {testMessage}
+                        </span>
+                      </div>
                     )}
-                  </Button>
-
-                  {saveStatus === "success" && (
-                    <div className="flex items-center gap-8 text-accent-forest">
-                      <Check className="w-16 h-16" />
-                      <span className="text-body-small font-medium">
-                        Saved!
-                      </span>
-                    </div>
-                  )}
-
-                  {saveStatus === "error" && (
-                    <div className="flex items-center gap-8 text-accent-crimson">
-                      <AlertCircle className="w-16 h-16" />
-                      <span className="text-body-small font-medium">
-                        {email && !isValidEmail(email)
-                          ? "Please enter a valid email"
-                          : "Failed to save"}
-                      </span>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
