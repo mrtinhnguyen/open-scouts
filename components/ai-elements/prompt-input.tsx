@@ -1162,7 +1162,6 @@ export const PromptInputSpeechButton = ({
       };
 
       recognitionRef.current = speechRecognition;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsRecognitionAvailable(true);
     }
 

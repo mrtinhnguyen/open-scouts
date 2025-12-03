@@ -11,7 +11,7 @@ interface EmailPayload {
 
 /**
  * Sends an email notification when a scout finds results
- * Only sends if user has set a notification email in settings
+ * Uses the user's authenticated account email from auth.users
  */
 export async function sendScoutSuccessEmail(
   scout: Scout,
@@ -20,38 +20,35 @@ export async function sendScoutSuccessEmail(
 ): Promise<void> {
   try {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Open Scouts <onboarding@resend.dev>";
 
     if (!RESEND_API_KEY) {
       console.log("RESEND_API_KEY not configured, skipping email notification");
       return;
     }
 
-    // Fetch user's notification email from user_preferences
-    const { data: preferences, error: prefError } = await supabase
-      .from("user_preferences")
-      .select("notification_email")
-      .eq("id", "00000000-0000-0000-0000-000000000001")
-      .single();
+    // Fetch user's email from auth.users table using the scout's user_id
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(scout.user_id);
 
-    if (prefError) {
-      console.error("Error fetching user preferences:", prefError);
+    if (userError) {
+      console.error("Error fetching user:", userError);
       return;
     }
 
-    // Check if user has set an email
-    if (!preferences?.notification_email) {
-      console.log("No notification email set in settings, skipping email");
+    // Check if user has an email
+    if (!userData?.user?.email) {
+      console.log("User has no email address, skipping email notification");
       return;
     }
 
-    const userEmail = preferences.notification_email;
+    const userEmail = userData.user.email;
     console.log(`Sending scout success email to: ${userEmail}`);
 
     // Format the email
     const emailHtml = formatScoutEmail(scout, scoutResponse);
 
     const emailPayload: EmailPayload = {
-      from: "Open Scouts <onboarding@resend.dev>",
+      from: RESEND_FROM_EMAIL,
       to: userEmail,
       subject: `Scout Alert: ${scout.title}`,
       html: emailHtml,
@@ -164,10 +161,10 @@ function formatScoutEmail(scout: Scout, scoutResponse: ScoutResponse): string {
           <tr>
             <td style="background-color: #f9f9f9; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e5e5;">
               <p style="margin: 0 0 10px 0; color: #999; font-size: 13px;">
-                You're receiving this because you enabled email notifications in your Open Scouts settings.
+                You're receiving this because you have active scouts in Open Scouts.
               </p>
               <p style="margin: 0; color: #999; font-size: 13px;">
-                <a href="https://openscout.dev/settings" style="color: #FF4C00; text-decoration: none;">Manage notification settings</a>
+                <a href="https://openscout.dev" style="color: #FF4C00; text-decoration: none;">View your scouts</a>
               </p>
             </td>
           </tr>

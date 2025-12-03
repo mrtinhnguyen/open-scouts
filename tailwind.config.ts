@@ -106,7 +106,8 @@ const themeConfig: Config = {
         "screenshot-scroll": "screenshot-scroll 15s ease-in-out infinite",
         "fade-in": "fade-in 0.5s ease-out",
         "fade-up": "fade-up 0.5s ease-out",
-        "selection-pulse-green": "selection-pulse-green 2s ease-in-out infinite",
+        "selection-pulse-green":
+          "selection-pulse-green 2s ease-in-out infinite",
         "button-press": "button-press 0.3s ease-in-out",
       },
       fontFamily: {

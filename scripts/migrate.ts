@@ -10,8 +10,12 @@ const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
   console.error("DATABASE_URL environment variable is required");
   console.log("\nPlease set your database connection string:");
-  console.log('export DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.rlilyfqfoxxxqqhsignc.supabase.co:5432/postgres"');
-  console.log("\nYou can find your database password in your Supabase project settings.");
+  console.log(
+    'export DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.rlilyfqfoxxxqqhsignc.supabase.co:5432/postgres"',
+  );
+  console.log(
+    "\nYou can find your database password in your Supabase project settings.",
+  );
   process.exit(1);
 }
 
@@ -21,7 +25,7 @@ async function runMigration() {
   try {
     const migrationsDir = join(process.cwd(), "supabase/migrations");
     const migrationFiles = readdirSync(migrationsDir)
-      .filter(file => file.endsWith(".sql"))
+      .filter((file) => file.endsWith(".sql"))
       .sort();
 
     if (migrationFiles.length === 0) {
@@ -34,7 +38,7 @@ async function runMigration() {
 
     const migrationSQL = readFileSync(
       join(migrationsDir, lastMigration),
-      "utf-8"
+      "utf-8",
     );
 
     await sql.unsafe(migrationSQL);

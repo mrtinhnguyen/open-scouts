@@ -18,6 +18,9 @@ import {
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import SymbolColored from "@/components/shared/icons/symbol-colored";
 
+// Rate limit: 20 minutes between manual runs
+const MANUAL_RUN_COOLDOWN_MS = 20 * 60 * 1000;
+
 type Scout = {
   id: string;
   title: string;
@@ -49,6 +52,7 @@ export default function ExecutionsPage() {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
 
   const triggerExecution = useCallback(async () => {
     setTriggering(true);
@@ -181,6 +185,30 @@ export default function ExecutionsPage() {
     };
   }, [scoutId, loadExecutions]);
 
+  // Calculate and update cooldown remaining
+  useEffect(() => {
+    if (executions.length === 0) {
+      setCooldownRemaining(0);
+      return;
+    }
+
+    // Get the most recent execution's start time
+    const mostRecentExecution = executions[0]; // Already sorted by started_at DESC
+    const lastRunTime = new Date(mostRecentExecution.started_at).getTime();
+
+    const calculateRemaining = () => {
+      const now = Date.now();
+      const elapsed = now - lastRunTime;
+      const remaining = Math.max(0, MANUAL_RUN_COOLDOWN_MS - elapsed);
+      setCooldownRemaining(remaining);
+    };
+
+    calculateRemaining();
+    const interval = setInterval(calculateRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [executions]);
+
   // Auto-trigger execution if autoRun parameter is present
   useEffect(() => {
     const autoRun = searchParams.get("autoRun");
@@ -273,7 +301,16 @@ export default function ExecutionsPage() {
   const hasRunningExecution = executions.some(
     (execution) => execution.status === "running",
   );
-  const isButtonDisabled = triggering || hasRunningExecution;
+  const isOnCooldown = cooldownRemaining > 0;
+  const isButtonDisabled = triggering || hasRunningExecution || isOnCooldown;
+
+  // Format cooldown remaining as MM:SS
+  const formatCooldown = (ms: number): string => {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="min-h-screen bg-background-base">
@@ -350,9 +387,14 @@ export default function ExecutionsPage() {
                   disabled={isButtonDisabled}
                   isLoading={triggering || hasRunningExecution}
                   loadingLabel={triggering ? "Starting..." : "Running..."}
+                  title={
+                    isOnCooldown
+                      ? `Available in ${formatCooldown(cooldownRemaining)}`
+                      : undefined
+                  }
                 >
                   <Play className="w-16 h-16" />
-                  Run Now
+                  {isOnCooldown ? formatCooldown(cooldownRemaining) : "Run Now"}
                 </Button>
 
                 <Button
@@ -448,7 +490,9 @@ export default function ExecutionsPage() {
               className="w-full"
             >
               <Play className="w-16 h-16" />
-              Run Now
+              {isOnCooldown
+                ? `Available in ${formatCooldown(cooldownRemaining)}`
+                : "Run Now"}
             </Button>
 
             {/* Clear Executions Button */}

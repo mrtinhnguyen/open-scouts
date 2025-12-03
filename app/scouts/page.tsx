@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/shadcn/dialog";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import SymbolColored from "@/components/shared/icons/symbol-colored";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Scout = {
   id: string;
@@ -46,6 +47,7 @@ type Location = {
 
 export default function ScoutsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [scouts, setScouts] = useState<Scout[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,62 +57,61 @@ export default function ScoutsPage() {
     title: string;
   } | null>(null);
 
-  // Get user's location using browser geolocation API
+  // Load user's location from preferences
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
+    const loadUserLocation = async () => {
+      if (!user?.id) return;
 
-          // Reverse geocode to get city name
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            );
-            const data = await response.json();
-            const city =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.village ||
-              "Unknown";
+      try {
+        const { data } = await supabase
+          .from("user_preferences")
+          .select("location")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-            setLocation({
-              city,
-              latitude,
-              longitude,
-            });
-          } catch (error) {
-            console.error("Error getting city name:", error);
-            setLocation({
-              city: "Unknown",
-              latitude,
-              longitude,
-            });
-          }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        },
-      );
-    }
-  }, []);
+        if (data?.location) {
+          // Convert from UserLocation format to scout Location format
+          const userLoc = data.location;
+          setLocation({
+            city: userLoc.city || userLoc.country || "Unknown",
+            state: userLoc.state || undefined,
+            country: userLoc.country || undefined,
+            latitude: userLoc.latitude || 0,
+            longitude: userLoc.longitude || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading user location:", error);
+      }
+    };
+
+    loadUserLocation();
+  }, [user?.id]);
 
   const loadScouts = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data } = await supabase
       .from("scouts")
       .select("*")
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false });
     if (data) setScouts(data);
     setLoading(false);
   };
 
   const createNewScout = async () => {
+    if (!user?.id) return;
+
     const { data, error } = await supabase
       .from("scouts")
       .insert({
         title: "New Scout",
         location: location,
+        user_id: user.id,
       })
       .select()
       .single();
@@ -155,11 +156,10 @@ export default function ScoutsPage() {
   };
 
   useEffect(() => {
-    const load = async () => {
-      await loadScouts();
-    };
-    load();
-  }, []);
+    if (user?.id) {
+      loadScouts();
+    }
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background-base">

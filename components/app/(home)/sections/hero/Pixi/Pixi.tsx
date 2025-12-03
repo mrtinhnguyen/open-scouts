@@ -10,9 +10,9 @@ export default function HomeHeroPixi() {
       canvasAttrs={{
         className: "cw-[1314px] h-506 absolute top-100 lg-max:hidden",
       }}
-      fps={Infinity}
+      fps={30}
       initOptions={{ backgroundAlpha: 0 }}
-      smartStop={false}
+      smartStop={true}
       tickers={[features]}
     />
   );

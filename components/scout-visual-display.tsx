@@ -244,7 +244,6 @@ export function ScoutVisualDisplay({
       const firstValidIndex = steps.findIndex(
         (s) => s.step_type !== "tool_call",
       );
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentStepIndex(firstValidIndex !== -1 ? firstValidIndex : 0);
 
       let stepIndex = firstValidIndex !== -1 ? firstValidIndex : 0;
@@ -486,7 +485,6 @@ export function ScoutVisualDisplay({
         validSteps.length > 0
           ? validSteps[validSteps.length - 1].index
           : steps.length - 1;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentStepIndex(latestValidIndex);
     }
   }, [replayMode, steps]);
@@ -547,7 +545,6 @@ export function ScoutVisualDisplay({
         (currentStep.output_data as { url?: string })?.url ||
         (currentStep.input_data as { url?: string })?.url;
       const resultIndex = searchResults.findIndex((r) => r.url === scrapedUrl);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveResultIndex(resultIndex);
 
       // Check if we have a screenshot

@@ -1,4 +1,5 @@
 module.exports = {
+  ignorePatterns: ["supabase/functions/**"],
   extends: [
     "next/core-web-vitals",
     "next/typescript",

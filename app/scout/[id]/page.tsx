@@ -90,70 +90,65 @@ export default function ScoutPage() {
       // Reload current scout after each message to update status indicators
       loadCurrentScout();
     },
+    onError: (error) => {
+      console.error("Chat error:", error);
+    },
   });
 
-  // Get user's location using browser geolocation API
+  // Loading state: true when submitted OR streaming
+  const isLoading = status === "submitted" || status === "streaming";
+
+  // Load user's location from preferences
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
+    const loadUserLocation = async () => {
+      try {
+        // Get current user
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user?.id) return;
 
-          // Reverse geocode to get city name
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            );
-            const data = await response.json();
-            const city =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.village ||
-              "Unknown";
-            const state = data.address?.state || data.address?.region;
-            const country = data.address?.country;
+        // Load location from user preferences
+        const { data } = await supabase
+          .from("user_preferences")
+          .select("location")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-            const locationData: Location = {
-              city,
-              state,
-              country,
-              latitude,
-              longitude,
-            };
+        if (data?.location) {
+          const userLoc = data.location;
+          const locationData: Location = {
+            city: userLoc.city || userLoc.country || "Unknown",
+            state: userLoc.state || undefined,
+            country: userLoc.country || undefined,
+            latitude: userLoc.latitude || 0,
+            longitude: userLoc.longitude || 0,
+          };
 
-            setLocation(locationData);
+          setLocation(locationData);
 
-            // Update scout with location if it exists and doesn't have a location yet
-            if (scoutId && scoutId !== "new") {
-              const { data: scoutData } = await supabase
+          // Update scout with location if it exists and doesn't have a location yet
+          if (scoutId && scoutId !== "new") {
+            const { data: scoutData } = await supabase
+              .from("scouts")
+              .select("location")
+              .eq("id", scoutId)
+              .single();
+
+            if (scoutData && !scoutData.location) {
+              await supabase
                 .from("scouts")
-                .select("location")
-                .eq("id", scoutId)
-                .single();
-
-              if (scoutData && !scoutData.location) {
-                await supabase
-                  .from("scouts")
-                  .update({ location: locationData })
-                  .eq("id", scoutId);
-              }
+                .update({ location: locationData })
+                .eq("id", scoutId);
             }
-          } catch (error) {
-            console.error("Error getting city name:", error);
-            setLocation({
-              city: "Unknown",
-              state: undefined,
-              country: undefined,
-              latitude,
-              longitude,
-            });
           }
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-        },
-      );
-    }
+        }
+      } catch (error) {
+        console.error("Error loading user location:", error);
+      }
+    };
+
+    loadUserLocation();
   }, [scoutId]);
 
   const loadCurrentScout = useCallback(async () => {
@@ -224,24 +219,17 @@ export default function ScoutPage() {
   };
 
   const activateScout = async () => {
-    console.log("Activate scout clicked", { scoutId, currentScout });
-
     if (!scoutId || scoutId === "new" || !currentScout) {
-      console.log("Early return: invalid scout", { scoutId, currentScout });
       return;
     }
 
     // If scout is already active, just navigate to executions page without autoRun
     if (currentScout.is_active) {
-      console.log(
-        "Scout already active, navigating to executions page without autoRun",
-      );
       router.push(`/${scoutId}`);
       return;
     }
 
     // Activate the scout
-    console.log("Updating scout to is_active=true");
     const { error } = await supabase
       .from("scouts")
       .update({ is_active: true })
@@ -252,7 +240,6 @@ export default function ScoutPage() {
       return;
     }
 
-    console.log("Scout activated, navigating to executions page");
     // Navigate to scout's execution page with autoRun parameter
     router.push(`/${scoutId}?autoRun=true`);
   };
@@ -312,6 +299,9 @@ export default function ScoutPage() {
     ) {
       hasAutoSubmitted.current = true;
 
+      // Clean up URL parameter using history API (doesn't trigger React re-render)
+      window.history.replaceState({}, "", `/scout/${scoutId}`);
+
       // Send the initial query
       sendMessage(
         {
@@ -324,9 +314,6 @@ export default function ScoutPage() {
           },
         },
       );
-
-      // Clean up URL parameter
-      router.replace(`/scout/${scoutId}`, { scroll: false });
     }
   }, [
     messagesLoaded,
@@ -335,7 +322,6 @@ export default function ScoutPage() {
     scoutId,
     location,
     sendMessage,
-    router,
   ]);
 
   // Track when button becomes enabled to trigger animation
@@ -413,11 +399,13 @@ export default function ScoutPage() {
           messagesLoaded ? (
             <div className="max-w-4xl mx-auto p-24 relative w-full h-full flex flex-col">
               <div className="flex flex-col flex-1 min-h-0 overflow-hidden px-8">
-                <Conversation className="overflow-hidden">
-                  <ConversationContent>
-                    {messages.length === 0 && status === "submitted" ? (
-                      <div className="flex-1 flex items-center justify-center text-gray-500">
-                        <Loader />
+                <Conversation className="overflow-hidden scroll-smooth [&::-webkit-scrollbar]:w-8 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
+                  <ConversationContent className="pb-24">
+                    {messages.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center text-gray-500 py-48">
+                        <p className="text-body-medium text-gray-400">
+                          Start by describing what you want to scout...
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -448,7 +436,8 @@ export default function ScoutPage() {
                                       {isAssistant &&
                                         isLastPart &&
                                         isLastMessage &&
-                                        currentScout && (
+                                        currentScout &&
+                                        !isLoading && (
                                           <div className="mt-16 mb-8">
                                             <ScoutChecklistTool
                                               currentScout={currentScout}
@@ -456,26 +445,28 @@ export default function ScoutPage() {
                                           </div>
                                         )}
 
-                                      {isAssistant && isLastPart && (
-                                        <MessageActions className="mt-8">
-                                          <MessageAction
-                                            onClick={() => regenerate()}
-                                            label="Retry"
-                                          >
-                                            <RefreshCcwIcon className="w-12 h-12" />
-                                          </MessageAction>
-                                          <MessageAction
-                                            onClick={() =>
-                                              navigator.clipboard.writeText(
-                                                part.text,
-                                              )
-                                            }
-                                            label="Copy"
-                                          >
-                                            <CopyIcon className="w-12 h-12" />
-                                          </MessageAction>
-                                        </MessageActions>
-                                      )}
+                                      {isAssistant &&
+                                        isLastPart &&
+                                        !isLoading && (
+                                          <MessageActions className="mt-8">
+                                            <MessageAction
+                                              onClick={() => regenerate()}
+                                              label="Retry"
+                                            >
+                                              <RefreshCcwIcon className="w-12 h-12" />
+                                            </MessageAction>
+                                            <MessageAction
+                                              onClick={() =>
+                                                navigator.clipboard.writeText(
+                                                  part.text,
+                                                )
+                                              }
+                                              label="Copy"
+                                            >
+                                              <CopyIcon className="w-12 h-12" />
+                                            </MessageAction>
+                                          </MessageActions>
+                                        )}
                                     </Fragment>
                                   );
                                 }
@@ -485,9 +476,6 @@ export default function ScoutPage() {
                             </div>
                           );
                         })}
-                        {messages.length > 0 && status === "submitted" && (
-                          <Loader />
-                        )}
                       </>
                     )}
                   </ConversationContent>
@@ -495,6 +483,17 @@ export default function ScoutPage() {
                 </Conversation>
 
                 <div className="mt-16">
+                  {/* Streaming indicator */}
+                  {isLoading && (
+                    <div className="flex items-center justify-center gap-8 mb-8">
+                      <div className="bg-white border border-gray-200 rounded-full px-12 py-6 shadow-sm flex items-center gap-8">
+                        <Loader size={14} />
+                        <span className="text-body-small text-gray-600">
+                          Setting up your scout...
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div className="relative rounded-8 border border-gray-200 bg-white overflow-hidden">
                     <PromptInput
                       onSubmit={handleSubmit}
@@ -530,17 +529,6 @@ export default function ScoutPage() {
                         currentScout.location &&
                         currentScout.search_queries?.length > 0 &&
                         currentScout.frequency;
-
-                      console.log("Scout completeness check:", {
-                        isComplete,
-                        title: !!currentScout.title,
-                        goal: !!currentScout.goal,
-                        description: !!currentScout.description,
-                        location: !!currentScout.location,
-                        search_queries:
-                          currentScout.search_queries?.length || 0,
-                        frequency: !!currentScout.frequency,
-                      });
 
                       const buttonText = currentScout.is_active
                         ? "Update Scout"
@@ -585,8 +573,8 @@ export default function ScoutPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              <Loader />
+            <div className="flex-1 flex items-center justify-center">
+              <Loader size={24} />
             </div>
           )
         ) : (
