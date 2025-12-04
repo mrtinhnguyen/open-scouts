@@ -83,6 +83,7 @@ export default function ScoutPage() {
   const [messagesLoaded, setMessagesLoaded] = useState(false);
   const [shouldAnimateButton, setShouldAnimateButton] = useState(false);
   const wasButtonDisabled = useRef(true);
+  const [requestingLocation, setRequestingLocation] = useState(false);
 
   const { messages, setMessages, sendMessage, status, regenerate } = useChat({
     id: scoutId,
@@ -98,6 +99,94 @@ export default function ScoutPage() {
   // Loading state: true when submitted OR streaming
   const isLoading = status === "submitted" || status === "streaming";
 
+  // Track if user location has been attempted to load
+  const [locationLoaded, setLocationLoaded] = useState(false);
+
+  // Request browser geolocation and save to user preferences
+  const requestBrowserLocation = useCallback(
+    async (userId: string) => {
+      if (!("geolocation" in navigator)) {
+        return null;
+      }
+
+      setRequestingLocation(true);
+
+      try {
+        const position = await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+            });
+          },
+        );
+
+        const { latitude, longitude } = position.coords;
+
+        // Reverse geocode using OpenStreetMap Nominatim
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+        );
+        const data = await response.json();
+
+        const city =
+          data.address?.city ||
+          data.address?.town ||
+          data.address?.village ||
+          data.address?.municipality ||
+          null;
+        const state = data.address?.state || null;
+        const country = data.address?.country || "Unknown";
+        const countryCode = data.address?.country_code?.toUpperCase() || "XX";
+
+        const userLocation = {
+          country,
+          countryCode,
+          state,
+          stateCode: null,
+          city,
+          latitude,
+          longitude,
+        };
+
+        // Save to user preferences
+        const { data: existing } = await supabase
+          .from("user_preferences")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from("user_preferences")
+            .update({ location: userLocation })
+            .eq("user_id", userId);
+        } else {
+          await supabase
+            .from("user_preferences")
+            .insert({ user_id: userId, location: userLocation });
+        }
+
+        // Convert to Location type
+        const locationData: Location = {
+          city: city || country || "Unknown",
+          state: state || undefined,
+          country: country || undefined,
+          latitude,
+          longitude,
+        };
+
+        return locationData;
+      } catch (error) {
+        console.error("Error getting browser location:", error);
+        return null;
+      } finally {
+        setRequestingLocation(false);
+      }
+    },
+    [],
+  );
+
   // Load user's location from preferences
   useEffect(() => {
     const loadUserLocation = async () => {
@@ -106,7 +195,10 @@ export default function ScoutPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!user?.id) return;
+        if (!user?.id) {
+          setLocationLoaded(true);
+          return;
+        }
 
         // Load location from user preferences
         const { data } = await supabase
@@ -142,14 +234,30 @@ export default function ScoutPage() {
                 .eq("id", scoutId);
             }
           }
+        } else {
+          // No location saved - request browser geolocation permission
+          const browserLocation = await requestBrowserLocation(user.id);
+          if (browserLocation) {
+            setLocation(browserLocation);
+
+            // Update scout with location if it exists
+            if (scoutId && scoutId !== "new") {
+              await supabase
+                .from("scouts")
+                .update({ location: browserLocation })
+                .eq("id", scoutId);
+            }
+          }
         }
       } catch (error) {
         console.error("Error loading user location:", error);
+      } finally {
+        setLocationLoaded(true);
       }
     };
 
     loadUserLocation();
-  }, [scoutId]);
+  }, [scoutId, requestBrowserLocation]);
 
   const loadCurrentScout = useCallback(async () => {
     if (scoutId && scoutId !== "new") {
@@ -290,19 +398,19 @@ export default function ScoutPage() {
   useEffect(() => {
     if (
       messagesLoaded &&
+      locationLoaded &&
       initialQuery &&
       !hasAutoSubmitted.current &&
       messages.length === 0 &&
       scoutId &&
-      scoutId !== "new" &&
-      location
+      scoutId !== "new"
     ) {
       hasAutoSubmitted.current = true;
 
       // Clean up URL parameter using history API (doesn't trigger React re-render)
       window.history.replaceState({}, "", `/scout/${scoutId}`);
 
-      // Send the initial query
+      // Send the initial query (location can be null if user hasn't set one)
       sendMessage(
         {
           text: initialQuery,
@@ -317,6 +425,7 @@ export default function ScoutPage() {
     }
   }, [
     messagesLoaded,
+    locationLoaded,
     initialQuery,
     messages.length,
     scoutId,
