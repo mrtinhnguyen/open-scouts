@@ -10,10 +10,12 @@ export function ScoutInput({
   placeholders,
   onChange,
   onSubmit,
+  value: externalValue,
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  value?: string;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
@@ -51,8 +53,15 @@ export function ScoutInput({
   >([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(externalValue || "");
   const [animating, setAnimating] = useState(false);
+
+  // Sync internal state with external value prop
+  useEffect(() => {
+    if (externalValue !== undefined && externalValue !== value) {
+      setValue(externalValue);
+    }
+  }, [externalValue]);
 
   const draw = useCallback(() => {
     if (!inputRef.current) return;

@@ -216,6 +216,7 @@ function HomeContent() {
                   placeholders={placeholders}
                   onChange={(e) => setQuery(e.target.value)}
                   onSubmit={handleSubmit}
+                  value={query}
                 />
               </div>
             </div>
