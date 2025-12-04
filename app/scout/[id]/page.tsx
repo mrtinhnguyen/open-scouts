@@ -478,7 +478,9 @@ export default function ScoutPage() {
   }, [currentScout, scoutId]);
 
   // Call handler when currentScout changes
-  handleScoutCompletion();
+  useEffect(() => {
+    handleScoutCompletion();
+  }, [handleScoutCompletion]);
 
   return (
     <div className="bg-gray-50 overflow-hidden flex flex-col h-[calc(100vh-7rem)]">
