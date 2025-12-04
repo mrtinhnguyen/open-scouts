@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { createFirecrawlKeyForUser } from "@/lib/firecrawl-partner";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -31,6 +32,29 @@ export async function GET(request: Request) {
         const hasActiveKey =
           preferences?.firecrawl_api_key &&
           preferences?.firecrawl_key_status === "active";
+
+        // PostHog: Identify user and track Google OAuth login on server side
+        const posthog = getPostHogClient();
+        const isNewUser = !hasActiveKey;
+
+        posthog.identify({
+          distinctId: user.id,
+          properties: {
+            email: user.email,
+          },
+        });
+
+        posthog.capture({
+          distinctId: user.id,
+          event: isNewUser ? "user_signed_up" : "user_logged_in",
+          properties: {
+            method: "google",
+            email: user.email,
+            is_new_user: isNewUser,
+          },
+        });
+
+        await posthog.shutdown();
 
         if (!hasActiveKey) {
           try {

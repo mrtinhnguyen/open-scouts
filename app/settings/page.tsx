@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import LocationSelector, { UserLocation } from "@/components/location-selector";
+import posthog from "posthog-js";
 
 type FirecrawlKeyStatus =
   | "pending"
@@ -120,17 +121,22 @@ export default function SettingsPage() {
     setTestMessage("");
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/send-test-email`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
+      // Get fresh session from supabase client to ensure we have a valid token
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+      if (!currentSession?.access_token) {
+        setTestStatus("error");
+        setTestMessage("You must be logged in to send a test email. Please refresh the page and try again.");
+        setSendingTest(false);
+        return;
+      }
+
+      const response = await fetch("/api/send-test-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       const data = await response.json();
 
@@ -140,6 +146,12 @@ export default function SettingsPage() {
       } else {
         setTestStatus("success");
         setTestMessage("Test email sent! Check your inbox.");
+
+        // PostHog: Track test email sent
+        posthog.capture("test_email_sent", {
+          status: "success",
+        });
+
         setTimeout(() => {
           setTestStatus("idle");
           setTestMessage("");
@@ -194,6 +206,12 @@ export default function SettingsPage() {
           createdAt: new Date().toISOString(),
           error: null,
         });
+
+        // PostHog: Track Firecrawl key regeneration
+        posthog.capture("firecrawl_key_regenerated", {
+          status: "success",
+        });
+
         setTimeout(() => setRegenerateMessage(""), 5000);
       }
     } catch (error) {
@@ -238,6 +256,14 @@ export default function SettingsPage() {
 
       setUserLocation(location);
       setLocationMessage("Location saved successfully!");
+
+      // PostHog: Track location update
+      posthog.capture("location_updated", {
+        city: location?.city,
+        country: location?.country,
+        has_coordinates: !!(location?.latitude && location?.longitude),
+      });
+
       setTimeout(() => setLocationMessage(""), 3000);
     } catch (error) {
       setLocationMessage(

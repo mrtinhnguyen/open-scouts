@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/shadcn/dialog";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import SymbolColored from "@/components/shared/icons/symbol-colored";
+import Tooltip from "@/components/ui/shadcn/tooltip";
+import posthog from "posthog-js";
 
 // Rate limit: 20 minutes between manual runs
 const MANUAL_RUN_COOLDOWN_MS = 20 * 60 * 1000;
@@ -92,6 +94,12 @@ export default function ExecutionsPage() {
       const minLoadingTime = 800;
       const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
 
+      // PostHog: Track scout execution triggered
+      posthog.capture("scout_execution_triggered", {
+        scout_id: scoutId,
+        trigger_source: "manual",
+      });
+
       setTimeout(() => {
         setTriggering(false);
       }, remainingTime);
@@ -112,6 +120,8 @@ export default function ExecutionsPage() {
   const confirmClearExecutions = async () => {
     if (!scoutId) return;
 
+    const executionsCount = executions.length;
+
     const { error } = await supabase
       .from("scout_executions")
       .delete()
@@ -122,6 +132,12 @@ export default function ExecutionsPage() {
       alert("Failed to clear executions. Please try again.");
       return;
     }
+
+    // PostHog: Track execution history cleared
+    posthog.capture("execution_history_cleared", {
+      scout_id: scoutId,
+      executions_cleared: executionsCount,
+    });
 
     setClearDialogOpen(false);
     await loadExecutions();
@@ -166,6 +182,12 @@ export default function ExecutionsPage() {
 
       if (data) {
         setScout(data);
+        // PostHog: Track execution results page viewed
+        posthog.capture("scout_results_viewed", {
+          scout_id: data.id,
+          scout_title: data.title,
+          is_active: data.is_active,
+        });
       }
       setLoading(false);
     };
@@ -397,20 +419,24 @@ export default function ExecutionsPage() {
 
               {/* Action buttons */}
               <div className="hidden sm:flex items-center gap-8">
-                <Button
-                  onClick={triggerExecution}
-                  disabled={isButtonDisabled}
-                  isLoading={isInRunningCooldown}
-                  loadingLabel="Running Scout"
-                  title={
-                    isOnCooldown
-                      ? `Available in ${formatCooldown(cooldownRemaining)}`
-                      : undefined
-                  }
-                >
-                  <Play className="w-16 h-16" />
-                  {isOnCooldown ? formatCooldown(cooldownRemaining) : "Run Now"}
-                </Button>
+                <div className="relative">
+                  <Tooltip
+                    description={
+                      isOnCooldown
+                        ? `Cooldown active. You can run again in ${formatCooldown(cooldownRemaining)}`
+                        : undefined
+                    }
+                  />
+                  <Button
+                    onClick={triggerExecution}
+                    disabled={isButtonDisabled}
+                    isLoading={isInRunningCooldown}
+                    loadingLabel="Running Scout"
+                  >
+                    {!isInRunningCooldown && !isOnCooldown && <Play className="w-16 h-16" />}
+                    {isOnCooldown ? formatCooldown(cooldownRemaining) : "Run Now"}
+                  </Button>
+                </div>
 
                 <Button
                   onClick={openClearDialog}
@@ -494,21 +520,30 @@ export default function ExecutionsPage() {
             </div>
 
             {/* Run Now Button */}
-            <Button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                triggerExecution();
-              }}
-              disabled={isButtonDisabled}
-              isLoading={isInRunningCooldown}
-              loadingLabel="Running Scout"
-              className="w-full"
-            >
-              <Play className="w-16 h-16" />
-              {isOnCooldown
-                ? `Available in ${formatCooldown(cooldownRemaining)}`
-                : "Run Now"}
-            </Button>
+            <div className="relative w-full">
+              <Tooltip
+                description={
+                  isOnCooldown
+                    ? `Cooldown active. You can run again in ${formatCooldown(cooldownRemaining)}`
+                    : undefined
+                }
+              />
+              <Button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  triggerExecution();
+                }}
+                disabled={isButtonDisabled}
+                isLoading={isInRunningCooldown}
+                loadingLabel="Running Scout"
+                className="w-full"
+              >
+                {!isInRunningCooldown && !isOnCooldown && <Play className="w-16 h-16" />}
+                {isOnCooldown
+                  ? `Available in ${formatCooldown(cooldownRemaining)}`
+                  : "Run Now"}
+              </Button>
+            </div>
 
             {/* Clear Executions Button */}
             <Button

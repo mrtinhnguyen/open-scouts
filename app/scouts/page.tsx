@@ -16,6 +16,7 @@ import {
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import SymbolColored from "@/components/shared/icons/symbol-colored";
 import { useAuth } from "@/contexts/AuthContext";
+import posthog from "posthog-js";
 
 type Scout = {
   id: string;
@@ -144,6 +145,12 @@ export default function ScoutsPage() {
       console.error("Error deleting scout:", error);
       return;
     }
+
+    // PostHog: Track scout deletion
+    posthog.capture("scout_deleted", {
+      scout_id: scoutToDelete.id,
+      scout_title: scoutToDelete.title,
+    });
 
     setDeleteDialogOpen(false);
     setScoutToDelete(null);

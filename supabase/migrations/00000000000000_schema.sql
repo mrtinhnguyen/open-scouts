@@ -206,6 +206,7 @@ DROP POLICY IF EXISTS "Users can create messages for their scouts" ON scout_mess
 DROP POLICY IF EXISTS "Users can view executions for their scouts" ON scout_executions;
 DROP POLICY IF EXISTS "Users can create executions for their scouts" ON scout_executions;
 DROP POLICY IF EXISTS "Users can update executions for their scouts" ON scout_executions;
+DROP POLICY IF EXISTS "Users can delete executions for their scouts" ON scout_executions;
 DROP POLICY IF EXISTS "Users can view execution steps for their scouts" ON scout_execution_steps;
 DROP POLICY IF EXISTS "Users can create execution steps for their scouts" ON scout_execution_steps;
 DROP POLICY IF EXISTS "Users can update execution steps for their scouts" ON scout_execution_steps;
@@ -249,6 +250,11 @@ CREATE POLICY "Users can create executions for their scouts"
   ));
 CREATE POLICY "Users can update executions for their scouts"
   ON scout_executions FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM scouts WHERE scouts.id = scout_executions.scout_id AND scouts.user_id = auth.uid()
+  ));
+CREATE POLICY "Users can delete executions for their scouts"
+  ON scout_executions FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM scouts WHERE scouts.id = scout_executions.scout_id AND scouts.user_id = auth.uid()
   ));

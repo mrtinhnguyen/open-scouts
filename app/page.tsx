@@ -12,6 +12,7 @@ import HowItWorks from "@/components/app/(home)/sections/scout/HowItWorks";
 import AlwaysSearching from "@/components/app/(home)/sections/scout/AlwaysSearching";
 import RecentDiscoveries from "@/components/app/(home)/sections/scout/RecentDiscoveries";
 import { useAuth } from "@/contexts/AuthContext";
+import posthog from "posthog-js";
 
 // Memoize background effect components to prevent re-renders during typing
 const MemoizedHomeHeroPixi = memo(HomeHeroPixi);
@@ -145,6 +146,13 @@ function HomeContent() {
       }
 
       if (scoutData) {
+        // PostHog: Track scout creation
+        posthog.capture("scout_created", {
+          scout_id: scoutData.id,
+          has_location: !!location,
+          query_length: queryText.length,
+        });
+
         // Redirect to scout page with query as URL parameter
         router.push(
           `/scout/${scoutData.id}?initialQuery=${encodeURIComponent(queryText)}`,

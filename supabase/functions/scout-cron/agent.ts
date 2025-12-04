@@ -11,6 +11,13 @@ import {
 } from "./helpers.ts";
 import { executeSearchTool, executeScrapeTool } from "./tools.ts";
 import { sendScoutSuccessEmail } from "./email.ts";
+import {
+  trackExecutionStarted,
+  trackExecutionCompleted,
+  trackExecutionFailed,
+  trackEmailNotificationSent,
+  trackDuplicateDetected,
+} from "./posthog.ts";
 
 // Calculate cosine similarity between two vectors
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -58,8 +65,18 @@ export async function executeScoutAgent(scout: Scout, supabase: any): Promise<vo
   }
 
   const executionId = execution.id;
+  const executionStartTime = Date.now();
   let stepNumber = 0;
   const toolCalls: any[] = [];
+
+  // Track execution started (fire-and-forget, don't await to avoid blocking)
+  trackExecutionStarted(
+    scout.user_id,
+    scout.id,
+    executionId,
+    scout.title,
+    "automatic" // Could be passed as param if manual trigger detection is needed
+  );
 
   try {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -597,6 +614,15 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
                   console.log(`  Completed at: ${prevExecution.completed_at}`);
                   isDuplicate = true;
 
+                  // Track duplicate detected
+                  trackDuplicateDetected(
+                    scout.user_id,
+                    scout.id,
+                    executionId,
+                    scout.title,
+                    similarity
+                  );
+
                   // Update the response to indicate this is a duplicate
                   scoutResponse.response = `${scoutResponse.response}\n\n---\n**Note**: This finding appears very similar to a previous result from ${new Date(prevExecution.completed_at).toLocaleDateString()}: "${prevExecution.summary_text}" (similarity: ${(similarity * 100).toFixed(1)}%)`;
                   break;
@@ -631,10 +657,31 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
         // Send email notification if scout was successful AND not a duplicate
         if (scoutResponse.taskCompleted && !isDuplicate) {
           console.log(`Scout found results, sending email notification...`);
-          await sendScoutSuccessEmail(scout, scoutResponse, supabase);
+          try {
+            await sendScoutSuccessEmail(scout, scoutResponse, supabase);
+            trackEmailNotificationSent(scout.user_id, scout.id, executionId, scout.title, true);
+          } catch (emailError: any) {
+            console.error(`Failed to send email notification:`, emailError.message);
+            trackEmailNotificationSent(scout.user_id, scout.id, executionId, scout.title, false, emailError.message);
+          }
         } else if (isDuplicate) {
           console.log(`📧 Skipping email notification - result is too similar to a previous finding`);
         }
+
+        // Track execution completed
+        trackExecutionCompleted(
+          scout.user_id,
+          scout.id,
+          executionId,
+          scout.title,
+          {
+            duration_ms: Date.now() - executionStartTime,
+            steps_count: stepNumber,
+            results_found: scoutResponse.taskCompleted,
+            is_duplicate: isDuplicate,
+            api_calls_count: firecrawlApiCallsCount,
+          }
+        );
       }
     }
 
@@ -680,6 +727,16 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
     console.log(`Scout execution completed: ${scout.title}`);
   } catch (error: any) {
     console.error(`Error executing scout ${scout.id}:`, error);
+
+    // Track execution failed
+    trackExecutionFailed(
+      scout.user_id,
+      scout.id,
+      executionId,
+      scout.title,
+      error.message,
+      Date.now() - executionStartTime
+    );
 
     // Mark current step as failed
     if (stepNumber > 0) {

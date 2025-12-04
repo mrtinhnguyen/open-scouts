@@ -1,0 +1,62 @@
+[
+  {
+    "event_name": "user_signed_up",
+    "description": "User successfully completes the sign-up process with email and password",
+    "file_path": "app/login/page.tsx"
+  },
+  {
+    "event_name": "user_logged_in",
+    "description": "User successfully logs in via email/password or Google OAuth",
+    "file_path": "app/login/page.tsx"
+  },
+  {
+    "event_name": "google_auth_initiated",
+    "description": "User clicks to authenticate with Google OAuth",
+    "file_path": "app/login/page.tsx"
+  },
+  {
+    "event_name": "scout_created",
+    "description": "User creates a new AI scout from the home page or scouts list",
+    "file_path": "app/page.tsx"
+  },
+  {
+    "event_name": "scout_configuration_completed",
+    "description": "Scout configuration is complete with all required fields (title, goal, description, location, search queries, frequency)",
+    "file_path": "app/scout/[id]/page.tsx"
+  },
+  {
+    "event_name": "scout_activated",
+    "description": "User activates a fully configured scout to start automated monitoring",
+    "file_path": "app/scout/[id]/page.tsx"
+  },
+  {
+    "event_name": "scout_execution_triggered",
+    "description": "User manually triggers a scout execution run",
+    "file_path": "app/[id]/page.tsx"
+  },
+  {
+    "event_name": "scout_deleted",
+    "description": "User deletes a scout from their scouts list",
+    "file_path": "app/scouts/page.tsx"
+  },
+  {
+    "event_name": "firecrawl_key_regenerated",
+    "description": "User regenerates their Firecrawl API key from settings",
+    "file_path": "app/settings/page.tsx"
+  },
+  {
+    "event_name": "test_email_sent",
+    "description": "User sends a test notification email from settings",
+    "file_path": "app/settings/page.tsx"
+  },
+  {
+    "event_name": "location_updated",
+    "description": "User updates their default location in settings",
+    "file_path": "app/settings/page.tsx"
+  },
+  {
+    "event_name": "execution_history_cleared",
+    "description": "User clears all execution history for a scout",
+    "file_path": "app/[id]/page.tsx"
+  }
+]

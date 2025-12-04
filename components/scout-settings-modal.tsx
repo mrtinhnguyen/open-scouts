@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/shadcn/select";
 import { supabase } from "@/lib/supabase/client";
 import { X, Plus, Pencil } from "lucide-react";
+import posthog from "posthog-js";
 
 type Scout = {
   id: string;
@@ -134,6 +135,13 @@ export function ScoutSettingsModal({
       .from("scouts")
       .update({ is_active: checked })
       .eq("id", scout.id);
+
+    // PostHog: Track scout activation/deactivation
+    posthog.capture(checked ? "scout_activated" : "scout_deactivated", {
+      scout_id: scout.id,
+      scout_title: scout.title,
+      source: "settings_modal",
+    });
 
     // Trigger callback to reload scout data
     if (onScoutUpdate) {

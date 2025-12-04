@@ -37,32 +37,32 @@ serve(async (req) => {
       );
     }
 
-    // Get the authorization header to identify the user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    // Get userId from request body
+    const body = await req.json().catch(() => ({}));
+    const { userId } = body;
+
+    if (!userId) {
       return new Response(
-        JSON.stringify({ error: "Authorization header required" }),
+        JSON.stringify({ error: "userId is required" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
+          status: 400,
         }
       );
     }
 
-    // Create a client with the user's JWT to get their identity
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Create admin client to get user info
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the authenticated user
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    // Get the user by ID
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
     if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
+        JSON.stringify({ error: "User not found" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
+          status: 404,
         }
       );
     }
