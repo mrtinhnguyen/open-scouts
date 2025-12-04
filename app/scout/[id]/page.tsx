@@ -39,7 +39,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/shadcn-default/tooltip";
-import { HyperText } from "@/components/ui/shadcn/hyper-text";
 
 type Scout = {
   id: string;
@@ -578,6 +577,8 @@ export default function ScoutPage() {
                                           <div className="mt-16 mb-8">
                                             <ScoutChecklistTool
                                               currentScout={currentScout}
+                                              currentLocation={location}
+                                              onScoutUpdate={loadCurrentScout}
                                             />
                                           </div>
                                         )}
@@ -680,18 +681,13 @@ export default function ScoutPage() {
                                   type="button"
                                   onClick={activateScout}
                                   disabled={!isComplete}
+                                  className={
+                                    isComplete && shouldAnimateButton
+                                      ? "animate-bounce"
+                                      : ""
+                                  }
                                 >
-                                  {isComplete && shouldAnimateButton ? (
-                                    <HyperText
-                                      duration={600}
-                                      className="text-body-medium font-medium py-0"
-                                      animateOnHover={false}
-                                    >
-                                      {buttonText}
-                                    </HyperText>
-                                  ) : (
-                                    buttonText
-                                  )}
+                                  {buttonText}
                                 </Button>
                               </TooltipTrigger>
                               {!isComplete && (

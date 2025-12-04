@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ScoutExecutionPanel } from "@/components/scout-execution-panel";
-import { Settings, Play, Trash2, Menu, Eye } from "lucide-react";
+import { Settings, Play, Trash2, Menu, Eye, Clock } from "lucide-react";
 import Button from "@/components/ui/shadcn/button";
 import { Skeleton } from "@/components/ui/shadcn/skeleton";
 import { Switch } from "@/components/ui/shadcn/switch";
@@ -339,7 +339,8 @@ export default function ExecutionsPage() {
   );
   const isOnCooldown = cooldownRemaining > 0;
   const isInRunningCooldown = runningCooldown || hasRunningExecution;
-  const isButtonDisabled = triggering || hasRunningExecution || isOnCooldown || runningCooldown;
+  const isButtonDisabled =
+    triggering || hasRunningExecution || isOnCooldown || runningCooldown;
 
   // Format cooldown remaining as MM:SS
   const formatCooldown = (ms: number): string => {
@@ -432,9 +433,15 @@ export default function ExecutionsPage() {
                     disabled={isButtonDisabled}
                     isLoading={isInRunningCooldown}
                     loadingLabel="Running Scout"
+                    className={isOnCooldown ? "min-w-[120px]" : ""}
                   >
-                    {!isInRunningCooldown && !isOnCooldown && <Play className="w-16 h-16" />}
-                    {isOnCooldown ? formatCooldown(cooldownRemaining) : "Run Now"}
+                    {!isInRunningCooldown && !isOnCooldown && (
+                      <Play className="w-16 h-16" />
+                    )}
+                    {isOnCooldown && <Clock className="w-16 h-16" />}
+                    {isOnCooldown
+                      ? formatCooldown(cooldownRemaining)
+                      : "Run Now"}
                   </Button>
                 </div>
 
@@ -491,7 +498,7 @@ export default function ExecutionsPage() {
         </div>
 
         {/* Execution Panel */}
-        <div className="pb-64">
+        <div className="pb-64 pt-20">
           <ScoutExecutionPanel
             scoutId={scoutId}
             showNotFound={showNotFound}
@@ -538,7 +545,10 @@ export default function ExecutionsPage() {
                 loadingLabel="Running Scout"
                 className="w-full"
               >
-                {!isInRunningCooldown && !isOnCooldown && <Play className="w-16 h-16" />}
+                {!isInRunningCooldown && !isOnCooldown && (
+                  <Play className="w-16 h-16" />
+                )}
+                {isOnCooldown && <Clock className="w-16 h-16" />}
                 {isOnCooldown
                   ? `Available in ${formatCooldown(cooldownRemaining)}`
                   : "Run Now"}

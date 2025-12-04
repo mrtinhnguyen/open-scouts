@@ -255,6 +255,7 @@ export function ScoutExecutionPanel({
   const [currentVisualStepIndex, setCurrentVisualStepIndex] = useState(0);
   const [scout, setScout] = useState<Scout | null>(null);
   const [timeUntilNext, setTimeUntilNext] = useState<string>("");
+  const [hasClickedInspect, setHasClickedInspect] = useState(false);
 
   // Load executions for this scout
   const loadExecutions = useCallback(async () => {
@@ -635,14 +636,23 @@ export function ScoutExecutionPanel({
                     })}
                   </span>
                 </div>
-                <div className="flex-1 h-1 bg-border-faint min-w-16" />
+                <div className="flex-1 h-1 min-w-16 bg-primary" />
                 <Button
-                  variant="tertiary"
+                  variant="primary"
                   onClick={() => {
                     loadSteps(execution.id);
                     setSelectedExecutionForJson(execution.id);
                     setCurrentVisualStepIndex(0);
+                    setHasClickedInspect(true);
                   }}
+                  className={
+                    executionIndex === 0 &&
+                    executions.length === 1 &&
+                    execution.status === "running" &&
+                    !hasClickedInspect
+                      ? "animate-bounce"
+                      : ""
+                  }
                 >
                   <Eye className="w-14 h-14" />
                   <span className="hidden xs:inline sm:inline">Inspect</span>
@@ -725,7 +735,7 @@ export function ScoutExecutionPanel({
 
                   if (markdownContent) {
                     return (
-                      <div className="prose prose-sm max-w-none px-12">
+                      <div className="prose prose-sm max-w-none px-12 bg-heat-100/5 border-l-2 border-gray-300 rounded-r-6 sm:pl-30">
                         <MarkdownRenderer content={markdownContent} />
                       </div>
                     );
