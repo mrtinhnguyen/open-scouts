@@ -36,7 +36,7 @@ type Scout = {
     latitude: number;
     longitude: number;
   } | null;
-  frequency: "hourly" | "every_3_days" | "weekly" | null;
+  frequency: "daily" | "every_3_days" | "weekly" | null;
   is_active: boolean;
 };
 
@@ -69,7 +69,7 @@ export function ScoutSettingsModal({
   const [searchQueries, setSearchQueries] = useState<string[]>([]);
   const [newQuery, setNewQuery] = useState("");
   const [frequency, setFrequency] = useState<
-    "hourly" | "every_3_days" | "weekly" | null
+    "daily" | "every_3_days" | "weekly" | null
   >(null);
   const [isActive, setIsActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -124,7 +124,7 @@ export function ScoutSettingsModal({
   if (!scout) return null;
 
   const frequencyLabels = {
-    hourly: "Every hour",
+    daily: "Daily",
     every_3_days: "Every 3 days",
     weekly: "Weekly",
   };
@@ -525,15 +525,15 @@ export function ScoutSettingsModal({
               <Select
                 value={frequency || undefined}
                 onValueChange={(value) =>
-                  setFrequency(value as "hourly" | "every_3_days" | "weekly")
+                  setFrequency(value as "daily" | "every_3_days" | "weekly")
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">
-                    {frequencyLabels.hourly}
+                  <SelectItem value="daily">
+                    {frequencyLabels.daily}
                   </SelectItem>
                   <SelectItem value="every_3_days">
                     {frequencyLabels.every_3_days}

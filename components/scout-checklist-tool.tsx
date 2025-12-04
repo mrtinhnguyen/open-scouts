@@ -43,7 +43,7 @@ type ScoutData = {
   description?: string;
   location?: Location | null;
   search_queries?: string[];
-  frequency?: "hourly" | "every_3_days" | "weekly" | null;
+  frequency?: "daily" | "every_3_days" | "weekly" | null;
 };
 
 type ScoutChecklistToolProps = {
@@ -54,7 +54,7 @@ type ScoutChecklistToolProps = {
 };
 
 const frequencyLabels: Record<string, string> = {
-  hourly: "Every hour",
+  daily: "Daily",
   every_3_days: "Every 3 days",
   weekly: "Weekly",
 };
@@ -79,7 +79,7 @@ export function ScoutChecklistTool({
   );
   const [newQuery, setNewQuery] = useState("");
   const [frequency, setFrequency] = useState<
-    "hourly" | "every_3_days" | "weekly" | null
+    "daily" | "every_3_days" | "weekly" | null
   >(currentScout.frequency || null);
   const [locationPreference, setLocationPreference] = useState<"current" | "any">(
     currentScout.location?.latitude === 0 &&
@@ -490,14 +490,14 @@ export function ScoutChecklistTool({
             <Select
               value={frequency || undefined}
               onValueChange={(value) =>
-                setFrequency(value as "hourly" | "every_3_days" | "weekly")
+                setFrequency(value as "daily" | "every_3_days" | "weekly")
               }
             >
               <SelectTrigger className="w-full text-body-small h-36">
                 <SelectValue placeholder="Select frequency" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="hourly">{frequencyLabels.hourly}</SelectItem>
+                <SelectItem value="daily">{frequencyLabels.daily}</SelectItem>
                 <SelectItem value="every_3_days">
                   {frequencyLabels.every_3_days}
                 </SelectItem>

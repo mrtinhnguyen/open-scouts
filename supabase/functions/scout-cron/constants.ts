@@ -37,10 +37,10 @@ export function isBlacklistedDomain(url: string): boolean {
 }
 
 // Calculate maxAge in milliseconds based on scout frequency
-export function getMaxAge(frequency: "hourly" | "every_3_days" | "weekly" | null): number {
+export function getMaxAge(frequency: "daily" | "every_3_days" | "weekly" | null): number {
   switch (frequency) {
-    case "hourly":
-      return 3600000; // 1 hour in milliseconds
+    case "daily":
+      return 86400000; // 1 day in milliseconds
     case "every_3_days":
       return 259200000; // 3 days in milliseconds
     case "weekly":

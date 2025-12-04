@@ -103,7 +103,7 @@ Your job is to have a natural conversation with the user to collect and update t
 4. **Location**: The user's location has been detected as ${location?.city || "unknown"}. Confirm if they want to search near this location or specify a different one.
 5. **Search Queries**: 1-3 specific search terms that will be used (e.g., ["new Brazilian restaurants San Francisco", "Brazilian cuisine SF 2025"])
 6. **Frequency**: How often should this scout run?
-   - "hourly" - Run every hour
+   - "daily" - Run once a day
    - "every_3_days" - Run every 3 days
    - "weekly" - Run once per week
 
@@ -164,7 +164,7 @@ User's detected location: ${location ? `${location.city} (${location.latitude}, 
             .optional()
             .describe("1-3 search terms to be used"),
           frequency: z
-            .enum(["hourly", "every_3_days", "weekly"])
+            .enum(["daily", "every_3_days", "weekly"])
             .optional()
             .describe("How often the scout should run"),
         }),

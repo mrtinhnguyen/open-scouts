@@ -26,8 +26,8 @@ export function shouldRunScout(scout: Scout): boolean {
   const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
 
   switch (scout.frequency) {
-    case "hourly":
-      return hoursSinceLastRun >= 1;
+    case "daily":
+      return hoursSinceLastRun >= 24;
     case "every_3_days":
       return hoursSinceLastRun >= 72;
     case "weekly":

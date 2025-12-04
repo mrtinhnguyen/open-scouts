@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS scouts (
   goal TEXT,
   search_queries JSONB DEFAULT '[]'::jsonb,
   location JSONB, -- {city: string, latitude: number, longitude: number}
-  frequency TEXT CHECK (frequency IN ('hourly', 'every_3_days', 'weekly')),
+  frequency TEXT CHECK (frequency IN ('daily', 'every_3_days', 'weekly')),
   is_active BOOLEAN DEFAULT false,
   last_run_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -335,7 +335,7 @@ BEGIN
   hours_since_last_run := EXTRACT(EPOCH FROM (NOW() - p_last_run_at)) / 3600;
 
   CASE p_frequency
-    WHEN 'hourly' THEN RETURN hours_since_last_run >= 1;
+    WHEN 'daily' THEN RETURN hours_since_last_run >= 24;
     WHEN 'every_3_days' THEN RETURN hours_since_last_run >= 72;
     WHEN 'weekly' THEN RETURN hours_since_last_run >= 168;
     ELSE RETURN FALSE;

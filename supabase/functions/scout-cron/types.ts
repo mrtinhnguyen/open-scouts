@@ -12,7 +12,7 @@ export interface Scout {
     latitude: number;
     longitude: number;
   } | null;
-  frequency: "hourly" | "every_3_days" | "weekly" | null;
+  frequency: "daily" | "every_3_days" | "weekly" | null;
   is_active: boolean;
   last_run_at: string | null;
 }

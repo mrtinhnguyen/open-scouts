@@ -154,7 +154,7 @@ ${currentScout.frequency ? `- Frequency: ${currentScout.frequency}` : "- Frequen
         search_queries: ["new Indian restaurants", "Indian restaurant openings", "Indian cuisine", "Indian food", "Indian dining"]
        ] "Where should I monitor?"
    User: "San Francisco"
-   AI: [calls update_scout_config with location] "How often - hourly, every 3 days, or weekly?"
+   AI: [calls update_scout_config with location] "How often - daily, every 3 days, or weekly?"
    User: "Every 3 days"
    AI: [calls update_scout_config with frequency] "Done! Click the green button to activate."
 
@@ -164,7 +164,7 @@ ${currentScout.frequency ? `- Frequency: ${currentScout.frequency}` : "- Frequen
    - Just ask for what's needed next
 
 7. **Frequency Options (use human-friendly language):**
-   - "hourly" - Say "every hour" or "hourly"
+   - "daily" - Say "once a day" or "daily"
    - "every_3_days" - Say "every 3 days" or "every three days"
    - "weekly" - Say "once a week" or "weekly"
    - NEVER use technical formats like "every_3_days" with underscores when talking to users
@@ -174,7 +174,7 @@ ${currentScout.frequency ? `- Frequency: ${currentScout.frequency}` : "- Frequen
    - NEVER use technical terms, variable names, or code-like formats
    - NEVER use underscores in your responses (e.g., say "every 3 days" not "every_3_days")
    - Use natural, conversational language
-   - Format options as readable text (e.g., "hourly, every 3 days, or weekly")
+   - Format options as readable text (e.g., "daily, every 3 days, or weekly")
 
 Be conversational and helpful. When scout is complete, tell user they can modify anything by chatting with you. Never use em dashes (—)`;
 
@@ -215,7 +215,7 @@ Be conversational and helpful. When scout is complete, tell user they can modify
             .optional()
             .describe("3-5 diverse search terms to maximize coverage (max 5)"),
           frequency: z
-            .enum(["hourly", "every_3_days", "weekly"])
+            .enum(["daily", "every_3_days", "weekly"])
             .optional()
             .describe("How often the scout should run"),
         }),
@@ -225,7 +225,7 @@ Be conversational and helpful. When scout is complete, tell user they can modify
           description?: string;
           location?: { city: string; latitude: number; longitude: number };
           search_queries?: string[];
-          frequency?: "hourly" | "every_3_days" | "weekly";
+          frequency?: "daily" | "every_3_days" | "weekly";
         }) => {
           // Update the scout with the new information
           const { error } = await supabaseServer

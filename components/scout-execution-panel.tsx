@@ -220,7 +220,7 @@ type Execution = {
 
 type Scout = {
   id: string;
-  frequency: "hourly" | "every_3_days" | "weekly" | null;
+  frequency: "daily" | "every_3_days" | "weekly" | null;
   last_run_at: string | null;
   is_active: boolean;
 };
@@ -334,8 +334,8 @@ export function ScoutExecutionPanel({
 
       let nextRun: Date;
       switch (scout.frequency) {
-        case "hourly":
-          nextRun = new Date(lastRun.getTime() + 60 * 60 * 1000);
+        case "daily":
+          nextRun = new Date(lastRun.getTime() + 24 * 60 * 60 * 1000);
           break;
         case "every_3_days":
           nextRun = new Date(lastRun.getTime() + 3 * 24 * 60 * 60 * 1000);

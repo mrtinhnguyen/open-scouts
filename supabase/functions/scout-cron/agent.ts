@@ -245,8 +245,8 @@ You have access to searchWeb and scrapeWebsite tools. Use them intelligently to 
 `;
 
     // Determine the appropriate time filter
-    const timeFilter = scout.frequency === 'hourly' ? 'qdr:h' : scout.frequency === 'every_3_days' ? 'qdr:w' : 'qdr:w';
-    const timeDescription = scout.frequency === 'hourly' ? 'hour' : scout.frequency === 'every_3_days' ? '3 days' : 'week';
+    const timeFilter = scout.frequency === 'daily' ? 'qdr:d' : scout.frequency === 'every_3_days' ? 'qdr:w' : 'qdr:w';
+    const timeDescription = scout.frequency === 'daily' ? 'day' : scout.frequency === 'every_3_days' ? '3 days' : 'week';
 
     const userMessage = `Execute the scout using this STRUCTURED WORKFLOW:
 
