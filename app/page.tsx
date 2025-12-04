@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense, useRef, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ScoutInput } from "@/components/scout-input";
@@ -12,6 +12,12 @@ import HowItWorks from "@/components/app/(home)/sections/scout/HowItWorks";
 import AlwaysSearching from "@/components/app/(home)/sections/scout/AlwaysSearching";
 import RecentDiscoveries from "@/components/app/(home)/sections/scout/RecentDiscoveries";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Memoize background effect components to prevent re-renders during typing
+const MemoizedHomeHeroPixi = memo(HomeHeroPixi);
+const MemoizedHeroFlame = memo(HeroFlame);
+const MemoizedBackgroundOuterPiece = memo(BackgroundOuterPiece);
+const MemoizedHomeHeroBackground = memo(HomeHeroBackground);
 
 const placeholders = [
   "Scout for Taylor Swift tickets in my city...",
@@ -179,10 +185,10 @@ function HomeContent() {
           className="relative flex-1 flex flex-col items-center justify-center"
           id="hero-content"
         >
-          <HomeHeroPixi />
-          <HeroFlame />
-          <BackgroundOuterPiece />
-          <HomeHeroBackground />
+          <MemoizedHomeHeroPixi />
+          <MemoizedHeroFlame />
+          <MemoizedBackgroundOuterPiece />
+          <MemoizedHomeHeroBackground />
 
           <div className="relative container px-16 w-full -mt-100 2xl:-mt-[250px]">
             <div className="max-w-5xl w-full mx-auto">

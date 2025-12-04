@@ -106,9 +106,7 @@ export function ScoutInput({
     }));
   }, [value]);
 
-  useEffect(() => {
-    draw();
-  }, [value, draw]);
+  // Only draw on submit, not on every keystroke - the draw() is called in vanishAndSubmit()
 
   const animate = (start: number) => {
     const animateFrame = (pos: number = 0) => {
