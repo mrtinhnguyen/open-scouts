@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef, memo } from "react";
+import { useState, useEffect, Suspense, useRef, memo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ScoutInput } from "@/components/scout-input";
@@ -39,29 +39,8 @@ function HomeContent() {
   const [query, setQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle pending query after login
-  useEffect(() => {
-    if (
-      pendingQuery &&
-      user &&
-      !authLoading &&
-      !hasProcessedPendingQuery.current
-    ) {
-      hasProcessedPendingQuery.current = true;
-      // Remove the query param from URL
-      router.replace("/");
-      // Set the query and auto-submit
-      setQuery(pendingQuery);
-      // Small delay to ensure state is set
-      const timeoutId = setTimeout(() => {
-        handleSubmitWithQuery(pendingQuery);
-      }, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [pendingQuery, user, authLoading, router]);
-
-  const handleSubmitWithQuery = async (queryText: string) => {
-    if (!queryText.trim() || isSubmitting) {
+  const submitQuery = useCallback(async (queryText: string) => {
+    if (!queryText.trim()) {
       return;
     }
 
@@ -162,6 +141,32 @@ function HomeContent() {
       console.error("Error:", error);
       setIsSubmitting(false);
     }
+  }, [router]);
+
+  // Handle pending query after login
+  useEffect(() => {
+    if (
+      pendingQuery &&
+      user &&
+      !authLoading &&
+      !hasProcessedPendingQuery.current
+    ) {
+      hasProcessedPendingQuery.current = true;
+      // Set the query in state for display
+      setQuery(pendingQuery);
+      // Auto-submit the pending query
+      submitQuery(pendingQuery).then(() => {
+        // Clean URL after submission completes
+        router.replace("/");
+      });
+    }
+  }, [pendingQuery, user, authLoading, router, submitQuery]);
+
+  const handleSubmitWithQuery = async (queryText: string) => {
+    if (isSubmitting) {
+      return;
+    }
+    await submitQuery(queryText);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
