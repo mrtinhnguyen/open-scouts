@@ -154,13 +154,13 @@ function HomeContent() {
       hasProcessedPendingQuery.current = true;
       // Set the query in state for display
       setQuery(pendingQuery);
-      // Auto-submit the pending query
-      submitQuery(pendingQuery).then(() => {
-        // Clean URL after submission completes
-        router.replace("/");
-      });
+      // Clean URL immediately (before navigation) to prevent issues
+      // Use history API to avoid interfering with router navigation
+      window.history.replaceState({}, "", "/");
+      // Auto-submit the pending query (this will navigate to /scout/{id})
+      submitQuery(pendingQuery);
     }
-  }, [pendingQuery, user, authLoading, router, submitQuery]);
+  }, [pendingQuery, user, authLoading, submitQuery]);
 
   const handleSubmitWithQuery = async (queryText: string) => {
     if (isSubmitting) {
