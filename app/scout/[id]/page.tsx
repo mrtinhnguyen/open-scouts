@@ -218,35 +218,11 @@ export default function ScoutPage() {
           };
 
           setLocation(locationData);
-
-          // Update scout with location if it exists and doesn't have a location yet
-          if (scoutId && scoutId !== "new") {
-            const { data: scoutData } = await supabase
-              .from("scouts")
-              .select("location")
-              .eq("id", scoutId)
-              .single();
-
-            if (scoutData && !scoutData.location) {
-              await supabase
-                .from("scouts")
-                .update({ location: locationData })
-                .eq("id", scoutId);
-            }
-          }
         } else {
           // No location saved - request browser geolocation permission
           const browserLocation = await requestBrowserLocation(user.id);
           if (browserLocation) {
             setLocation(browserLocation);
-
-            // Update scout with location if it exists
-            if (scoutId && scoutId !== "new") {
-              await supabase
-                .from("scouts")
-                .update({ location: browserLocation })
-                .eq("id", scoutId);
-            }
           }
         }
       } catch (error) {
@@ -257,7 +233,7 @@ export default function ScoutPage() {
     };
 
     loadUserLocation();
-  }, [scoutId, requestBrowserLocation]);
+  }, [requestBrowserLocation]);
 
   const loadCurrentScout = useCallback(async () => {
     if (scoutId && scoutId !== "new") {
@@ -624,9 +600,9 @@ export default function ScoutPage() {
                   {/* Streaming indicator */}
                   {isLoading && (
                     <div className="flex items-center justify-center gap-8 mb-8">
-                      <div className="bg-white border border-gray-200 rounded-full px-12 py-6 shadow-sm flex items-center gap-8">
+                      <div className="bg-primary rounded-full px-12 py-6 shadow-sm flex items-center gap-8 text-white">
                         <Loader size={14} />
-                        <span className="text-body-small text-gray-600">
+                        <span className="text-body-small">
                           Setting up your scout...
                         </span>
                       </div>

@@ -8,6 +8,9 @@ import { z } from "zod";
 
 export const maxDuration = 300;
 
+// Message window size - only send last N messages to reduce token usage
+const MESSAGE_WINDOW_SIZE = 10;
+
 type Location = {
   city: string;
   latitude: number;
@@ -15,20 +18,7 @@ type Location = {
 };
 
 export async function POST(req: Request) {
-  // Get user session for authentication
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Parse request body with error handling
+  // Parse request body first (no DB call needed)
   let body: {
     messages: UIMessage[];
     scoutId: string;
@@ -47,14 +37,27 @@ export async function POST(req: Request) {
 
   const { messages, scoutId, location } = body;
 
-  // Verify user owns this scout
-  const { data: scout, error: scoutError } = await supabaseServer
-    .from("scouts")
-    .select("user_id")
-    .eq("id", scoutId)
-    .single();
+  // Combined: auth check + scout ownership + scout data in parallel
+  const supabase = await createServerSupabaseClient();
+  const [authResult, scoutResult] = await Promise.all([
+    supabase.auth.getUser(),
+    supabaseServer
+      .from("scouts")
+      .select("*")
+      .eq("id", scoutId)
+      .single(),
+  ]);
 
-  if (scoutError || !scout || scout.user_id !== user.id) {
+  const user = authResult.data?.user;
+  if (!user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const { data: scoutData, error: scoutError } = scoutResult;
+  if (scoutError || !scoutData || scoutData.user_id !== user.id) {
     return new Response(
       JSON.stringify({ error: "Scout not found or unauthorized" }),
       {
@@ -64,11 +67,12 @@ export async function POST(req: Request) {
     );
   }
 
+  const currentScout = scoutData;
+
   // Save user message to database
   if (messages.length > 0) {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage.role === "user") {
-      // Extract text from UIMessage parts
       const textParts = lastMessage.parts.filter(
         (part) => part.type === "text",
       );
@@ -84,14 +88,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Get current scout data
-  const { data: scoutData } = await supabaseServer
-    .from("scouts")
-    .select("*")
-    .eq("id", scoutId)
-    .single();
-
-  const currentScout = scoutData || {};
+  // Apply message windowing - only keep last N messages
+  const windowedMessages = messages.slice(-MESSAGE_WINDOW_SIZE);
 
   // Create system prompt for continuous configuration
   const systemPrompt = `You are an intelligent assistant that helps users create "Scouts" - automated monitoring and search tasks.
@@ -180,7 +178,7 @@ Be conversational and helpful. When scout is complete, tell user they can modify
 
   const result = streamText({
     model: openai("gpt-5-mini"),
-    messages: convertToModelMessages(messages),
+    messages: convertToModelMessages(windowedMessages),
     system: systemPrompt,
     toolChoice: "auto",
     stopWhen: stepCountIs(5),
@@ -237,31 +235,22 @@ Be conversational and helpful. When scout is complete, tell user they can modify
             return { success: false, error: error.message };
           }
 
-          // After update, check if scout is complete
-          const { data: updatedScout } = await supabaseServer
-            .from("scouts")
-            .select("*")
-            .eq("id", scoutId)
-            .single();
+          // Compute completion status from merged data (avoid extra DB query)
+          const merged = { ...currentScout, ...params };
+          const isComplete =
+            merged.title &&
+            merged.goal &&
+            merged.description &&
+            merged.location &&
+            (merged.search_queries?.length ?? 0) > 0 &&
+            merged.frequency;
 
-          if (updatedScout) {
-            const isComplete =
-              updatedScout.title &&
-              updatedScout.goal &&
-              updatedScout.description &&
-              updatedScout.location &&
-              updatedScout.search_queries?.length > 0 &&
-              updatedScout.frequency;
-
-            // Don't auto-mark as completed - let the UI handle completion state
-            return {
-              success: true,
-              completed: isComplete,
-              message: "Scout updated successfully",
-            };
-          }
-
-          return { success: true, completed: false };
+          // Return updated scout data so client can update state without refetching
+          return {
+            success: true,
+            completed: isComplete,
+            updatedFields: params,
+          };
         },
       },
     },
