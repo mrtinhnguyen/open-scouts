@@ -613,7 +613,7 @@ export function ScoutExecutionPanel({
           }
 
           return (
-            <div key={execution.id} className="py-24 first:pt-0">
+            <div key={execution.id} className="py-24 first:pt-0 px-10">
               {/* Date/Time Header with Line */}
               <div className="flex items-center gap-12 sm:gap-16 mb-20">
                 <div className="flex items-center gap-8 text-mono-x-small font-mono text-black-alpha-48 whitespace-nowrap">

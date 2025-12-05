@@ -103,89 +103,86 @@ export default function ScoutPage() {
   const [locationLoaded, setLocationLoaded] = useState(false);
 
   // Request browser geolocation and save to user preferences
-  const requestBrowserLocation = useCallback(
-    async (userId: string) => {
-      if (!("geolocation" in navigator)) {
-        return null;
-      }
+  const requestBrowserLocation = useCallback(async (userId: string) => {
+    if (!("geolocation" in navigator)) {
+      return null;
+    }
 
-      setRequestingLocation(true);
+    setRequestingLocation(true);
 
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-            });
-          },
-        );
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        },
+      );
 
-        const { latitude, longitude } = position.coords;
+      const { latitude, longitude } = position.coords;
 
-        // Reverse geocode using OpenStreetMap Nominatim
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-        );
-        const data = await response.json();
+      // Reverse geocode using OpenStreetMap Nominatim
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+      );
+      const data = await response.json();
 
-        const city =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.village ||
-          data.address?.municipality ||
-          null;
-        const state = data.address?.state || null;
-        const country = data.address?.country || "Unknown";
-        const countryCode = data.address?.country_code?.toUpperCase() || "XX";
+      const city =
+        data.address?.city ||
+        data.address?.town ||
+        data.address?.village ||
+        data.address?.municipality ||
+        null;
+      const state = data.address?.state || null;
+      const country = data.address?.country || "Unknown";
+      const countryCode = data.address?.country_code?.toUpperCase() || "XX";
 
-        const userLocation = {
-          country,
-          countryCode,
-          state,
-          stateCode: null,
-          city,
-          latitude,
-          longitude,
-        };
+      const userLocation = {
+        country,
+        countryCode,
+        state,
+        stateCode: null,
+        city,
+        latitude,
+        longitude,
+      };
 
-        // Save to user preferences
-        const { data: existing } = await supabase
+      // Save to user preferences
+      const { data: existing } = await supabase
+        .from("user_preferences")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
           .from("user_preferences")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (existing) {
-          await supabase
-            .from("user_preferences")
-            .update({ location: userLocation })
-            .eq("user_id", userId);
-        } else {
-          await supabase
-            .from("user_preferences")
-            .insert({ user_id: userId, location: userLocation });
-        }
-
-        // Convert to Location type
-        const locationData: Location = {
-          city: city || country || "Unknown",
-          state: state || undefined,
-          country: country || undefined,
-          latitude,
-          longitude,
-        };
-
-        return locationData;
-      } catch (error) {
-        console.error("Error getting browser location:", error);
-        return null;
-      } finally {
-        setRequestingLocation(false);
+          .update({ location: userLocation })
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("user_preferences")
+          .insert({ user_id: userId, location: userLocation });
       }
-    },
-    [],
-  );
+
+      // Convert to Location type
+      const locationData: Location = {
+        city: city || country || "Unknown",
+        state: state || undefined,
+        country: country || undefined,
+        latitude,
+        longitude,
+      };
+
+      return locationData;
+    } catch (error) {
+      console.error("Error getting browser location:", error);
+      return null;
+    } finally {
+      setRequestingLocation(false);
+    }
+  }, []);
 
   // Load user's location from preferences
   useEffect(() => {
@@ -506,13 +503,13 @@ export default function ScoutPage() {
       )}
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {scoutId && scoutId !== "new" ? (
           messagesLoaded ? (
-            <div className="max-w-4xl mx-auto p-24 relative w-full h-full flex flex-col">
+            <div className="max-w-4xl mx-auto p-16 md:p-24 relative w-full h-full flex flex-col">
               <div className="flex flex-col flex-1 min-h-0 overflow-hidden px-8">
                 <Conversation className="overflow-hidden scroll-smooth [&::-webkit-scrollbar]:w-8 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
-                  <ConversationContent className="pb-24">
+                  <ConversationContent className="pb-[180px] md:pb-24">
                     {messages.length === 0 ? (
                       <div className="flex-1 flex items-center justify-center text-gray-500 py-48">
                         <p className="text-body-medium text-gray-400">
@@ -596,7 +593,8 @@ export default function ScoutPage() {
                   <ConversationScrollButton />
                 </Conversation>
 
-                <div className="mt-16">
+                {/* Desktop input - inline */}
+                <div className="hidden md:block mt-16">
                   {/* Streaming indicator */}
                   {isLoading && (
                     <div className="flex items-center justify-center gap-8 mb-8">
@@ -696,6 +694,93 @@ export default function ScoutPage() {
                 Go to Scouts
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Mobile fixed bottom input */}
+        {scoutId && scoutId !== "new" && messagesLoaded && (
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 p-12 pb-[calc(12px+env(safe-area-inset-bottom))] mx-20">
+            {/* Streaming indicator */}
+            {isLoading && (
+              <div className="flex items-center justify-center gap-8 mb-8">
+                <div className="bg-primary rounded-full px-12 py-6 shadow-sm flex items-center gap-8 text-white">
+                  <Loader size={14} />
+                  <span className="text-body-small">
+                    Setting up your scout...
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="relative rounded-8 border border-gray-200 bg-white overflow-hidden">
+              <PromptInput
+                onSubmit={handleSubmit}
+                className="border-0 shadow-none [&_[data-slot=input-group]]:block"
+              >
+                <PromptInputTextarea
+                  onChange={(e) => setInput(e.target.value)}
+                  value={input}
+                  placeholder="Describe what you'd like to scout..."
+                  className="pr-56 w-full"
+                />
+              </PromptInput>
+              <button
+                type="button"
+                disabled={!input}
+                onClick={() => {
+                  const form = document.querySelector(
+                    "form",
+                  ) as HTMLFormElement;
+                  if (form) form.requestSubmit();
+                }}
+                className="absolute bottom-8 right-8 w-40 h-40 rounded-8 bg-heat-100 text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-heat-80 transition-colors"
+              >
+                <CornerDownLeftIcon className="w-20 h-20" />
+              </button>
+            </div>
+            {currentScout &&
+              (() => {
+                const isComplete =
+                  currentScout.title &&
+                  currentScout.goal &&
+                  currentScout.description &&
+                  currentScout.location &&
+                  currentScout.search_queries?.length > 0 &&
+                  currentScout.frequency;
+
+                const buttonText = currentScout.is_active
+                  ? "Update Scout"
+                  : "Activate Scout";
+
+                return (
+                  <div className="mt-8 flex justify-end">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            onClick={activateScout}
+                            disabled={!isComplete}
+                            className={
+                              isComplete && shouldAnimateButton
+                                ? "animate-bounce"
+                                : ""
+                            }
+                          >
+                            {buttonText}
+                          </Button>
+                        </TooltipTrigger>
+                        {!isComplete && (
+                          <TooltipContent>
+                            <p className="text-body-small">
+                              Complete scout configuration first
+                            </p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                );
+              })()}
           </div>
         )}
       </div>

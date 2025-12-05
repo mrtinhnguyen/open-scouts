@@ -491,15 +491,33 @@ export default function ExecutionsPage() {
                 </Button>
               </div>
 
-              {/* Mobile menu button */}
-              <Button
-                onClick={() => setMobileMenuOpen(true)}
-                variant="secondary"
-                className="sm:hidden"
-              >
-                <Menu className="w-16 h-16" />
-                Menu
-              </Button>
+              {/* Mobile controls */}
+              <div className="flex sm:hidden items-center gap-8">
+                {/* Mobile Run Now button */}
+                <Button
+                  onClick={triggerExecution}
+                  disabled={isButtonDisabled}
+                  isLoading={isInRunningState}
+                  loadingLabel="Running"
+                  className={isOnCooldown ? "min-w-[100px]" : ""}
+                >
+                  {!isInRunningState && !isOnCooldown && (
+                    <Play className="w-16 h-16" />
+                  )}
+                  {isOnCooldown && <Clock className="w-16 h-16" />}
+                  {isOnCooldown
+                    ? formatCooldown(cooldownRemaining)
+                    : "Run Now"}
+                </Button>
+
+                {/* Mobile menu button */}
+                <Button
+                  onClick={() => setMobileMenuOpen(true)}
+                  variant="secondary"
+                >
+                  <Menu className="w-16 h-16" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -554,35 +572,6 @@ export default function ExecutionsPage() {
                 checked={showNotFound}
                 onCheckedChange={setShowNotFound}
               />
-            </div>
-
-            {/* Run Now Button */}
-            <div className="relative w-full">
-              <Tooltip
-                description={
-                  isOnCooldown
-                    ? `Cooldown active. You can run again in ${formatCooldown(cooldownRemaining)}`
-                    : undefined
-                }
-              />
-              <Button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  triggerExecution();
-                }}
-                disabled={isButtonDisabled}
-                isLoading={isInRunningState}
-                loadingLabel="Running Scout"
-                className="w-full"
-              >
-                {!isInRunningState && !isOnCooldown && (
-                  <Play className="w-16 h-16" />
-                )}
-                {isOnCooldown && <Clock className="w-16 h-16" />}
-                {isOnCooldown
-                  ? `Available in ${formatCooldown(cooldownRemaining)}`
-                  : "Run Now"}
-              </Button>
             </div>
 
             {/* Clear Executions Button */}
