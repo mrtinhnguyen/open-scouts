@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/ui/shadcn/button";
@@ -41,8 +42,16 @@ interface FirecrawlInfo {
 }
 
 export default function SettingsPage() {
-  const { user, session } = useAuth();
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [user, authLoading, router]);
   const [sendingTest, setSendingTest] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">(
     "idle",
@@ -89,8 +98,10 @@ export default function SettingsPage() {
           .maybeSingle();
 
         if (data) {
+          // Status only reflects the auto-generated key (sponsored integration)
           setFirecrawlInfo({
-            status: data.firecrawl_key_status || "pending",
+            status: (data.firecrawl_key_status ||
+              "pending") as FirecrawlKeyStatus,
             hasKey: !!data.firecrawl_api_key,
             createdAt: data.firecrawl_key_created_at,
             error: data.firecrawl_key_error,
@@ -441,6 +452,15 @@ export default function SettingsPage() {
     }
   };
 
+  // Show loading while checking auth
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background-base flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-2 border-heat-100 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background-base">
       {/* Top border line */}
@@ -497,12 +517,12 @@ export default function SettingsPage() {
               <div className="p-24 space-y-16">
                 <div>
                   <h3 className="text-label-medium font-semibold text-accent-black mb-8">
-                    Web Scraping Connection
+                    Sponsored Integration
                   </h3>
                   <p className="text-body-small text-black-alpha-48 mb-16">
-                    Your scouts use Firecrawl to search and scrape web content.
-                    Each account has a dedicated API key for tracking and
-                    reliability.
+                    Open Scouts provides a free Firecrawl API key for you to
+                    test the platform. This sponsored integration has limited
+                    credits. For unlimited usage, add your own API key below.
                   </p>
 
                   {/* Status Badge */}
@@ -612,19 +632,24 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-8 mb-8">
                     <Key className="w-16 h-16 text-black-alpha-48" />
                     <h3 className="text-label-medium font-semibold text-accent-black">
-                      Custom API Key
+                      Your Own API Key
                     </h3>
+                    {hasCustomKey && (
+                      <span className="text-mono-x-small text-accent-forest bg-accent-forest/10 px-8 py-2 rounded-4">
+                        Active
+                      </span>
+                    )}
                   </div>
                   <p className="text-body-small text-black-alpha-48 mb-16">
-                    Use your own Firecrawl API key for unlimited usage. Get your
-                    key from the{" "}
+                    Add your own Firecrawl API key for unlimited usage. Your key
+                    will be used instead of the sponsored integration.{" "}
                     <a
                       href="https://www.firecrawl.dev/app/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-heat-100 hover:underline inline-flex items-center gap-4"
                     >
-                      Firecrawl Dashboard
+                      Get your key here
                       <ExternalLink className="w-12 h-12" />
                     </a>
                   </p>
