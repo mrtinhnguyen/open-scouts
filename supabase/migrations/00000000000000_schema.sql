@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   location JSONB, -- {country, countryCode, state, stateCode, city, latitude, longitude}
   -- Firecrawl integration
   firecrawl_api_key TEXT,
+  firecrawl_custom_api_key TEXT, -- User's own Firecrawl API key (takes priority over auto-generated)
   firecrawl_key_status TEXT DEFAULT 'pending'
     CHECK (firecrawl_key_status IN ('pending', 'active', 'fallback', 'failed', 'invalid')),
   firecrawl_key_created_at TIMESTAMP WITH TIME ZONE,

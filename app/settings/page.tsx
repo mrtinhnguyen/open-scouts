@@ -17,6 +17,10 @@ import {
   XCircle,
   AlertTriangle,
   MapPin,
+  Key,
+  ExternalLink,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import LocationSelector, { UserLocation } from "@/components/location-selector";
@@ -59,6 +63,13 @@ export default function SettingsPage() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
 
+  // Custom API key state
+  const [customApiKey, setCustomApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [savingApiKey, setSavingApiKey] = useState(false);
+  const [apiKeyMessage, setApiKeyMessage] = useState("");
+  const [hasCustomKey, setHasCustomKey] = useState(false);
+
   // Load preferences (Firecrawl + Location)
   useEffect(() => {
     const loadPreferences = async () => {
@@ -72,7 +83,7 @@ export default function SettingsPage() {
         const { data } = await supabase
           .from("user_preferences")
           .select(
-            "firecrawl_api_key, firecrawl_key_status, firecrawl_key_created_at, firecrawl_key_error, location",
+            "firecrawl_api_key, firecrawl_key_status, firecrawl_key_created_at, firecrawl_key_error, firecrawl_custom_api_key, location",
           )
           .eq("user_id", user.id)
           .maybeSingle();
@@ -86,6 +97,11 @@ export default function SettingsPage() {
           });
           if (data.location) {
             setUserLocation(data.location as UserLocation);
+          }
+          if (data.firecrawl_custom_api_key) {
+            setHasCustomKey(true);
+            // Show masked version
+            setCustomApiKey("fc-" + "•".repeat(32));
           }
         } else {
           // No preferences yet - set defaults
@@ -299,6 +315,86 @@ export default function SettingsPage() {
     setSavingLocation(false);
   };
 
+  const saveCustomApiKey = async () => {
+    if (!user?.id) return;
+
+    // Don't save if it's the masked placeholder
+    if (customApiKey.includes("•")) {
+      setApiKeyMessage("Please enter a new API key");
+      return;
+    }
+
+    // Validate format
+    if (customApiKey && !customApiKey.startsWith("fc-")) {
+      setApiKeyMessage("API key should start with 'fc-'");
+      return;
+    }
+
+    setSavingApiKey(true);
+    setApiKeyMessage("");
+
+    try {
+      // Check if user_preferences row exists
+      const { data: existing } = await supabase
+        .from("user_preferences")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const updateData = {
+        firecrawl_custom_api_key: customApiKey || null,
+        // If setting a custom key, mark status as active
+        ...(customApiKey && { firecrawl_key_status: "active" }),
+      };
+
+      if (existing) {
+        const { error } = await supabase
+          .from("user_preferences")
+          .update(updateData)
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_preferences")
+          .insert({ user_id: user.id, ...updateData });
+
+        if (error) throw error;
+      }
+
+      if (customApiKey) {
+        setHasCustomKey(true);
+        setApiKeyMessage("API key saved successfully!");
+        setFirecrawlInfo((prev) =>
+          prev ? { ...prev, status: "active" } : prev,
+        );
+        // Mask the key after saving
+        setCustomApiKey("fc-" + "•".repeat(32));
+      } else {
+        setHasCustomKey(false);
+        setApiKeyMessage("API key removed");
+      }
+
+      posthog.capture("firecrawl_custom_key_saved", {
+        has_key: !!customApiKey,
+      });
+
+      setTimeout(() => setApiKeyMessage(""), 3000);
+    } catch (error) {
+      setApiKeyMessage(
+        error instanceof Error ? error.message : "Failed to save API key",
+      );
+    }
+
+    setSavingApiKey(false);
+  };
+
+  const clearCustomApiKey = async () => {
+    setCustomApiKey("");
+    setHasCustomKey(false);
+    await saveCustomApiKey();
+  };
+
   const getStatusDisplay = (status: FirecrawlKeyStatus) => {
     switch (status) {
       case "active":
@@ -509,6 +605,124 @@ export default function SettingsPage() {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Custom API Key Section */}
+                <div className="pt-16 border-t border-border-faint">
+                  <div className="flex items-center gap-8 mb-8">
+                    <Key className="w-16 h-16 text-black-alpha-48" />
+                    <h3 className="text-label-medium font-semibold text-accent-black">
+                      Custom API Key
+                    </h3>
+                  </div>
+                  <p className="text-body-small text-black-alpha-48 mb-16">
+                    Use your own Firecrawl API key for unlimited usage. Get your
+                    key from the{" "}
+                    <a
+                      href="https://www.firecrawl.dev/app/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-heat-100 hover:underline inline-flex items-center gap-4"
+                    >
+                      Firecrawl Dashboard
+                      <ExternalLink className="w-12 h-12" />
+                    </a>
+                  </p>
+
+                  <div className="space-y-12">
+                    <div className="relative">
+                      <input
+                        type={showApiKey ? "text" : "password"}
+                        value={customApiKey}
+                        onChange={(e) => {
+                          setCustomApiKey(e.target.value);
+                          setApiKeyMessage("");
+                        }}
+                        onFocus={() => {
+                          // Clear masked placeholder on focus
+                          if (customApiKey.includes("•")) {
+                            setCustomApiKey("");
+                          }
+                        }}
+                        placeholder="fc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        className="w-full h-44 px-16 pr-44 rounded-8 border border-border-muted bg-background-base text-body-medium font-mono focus:outline-none focus:border-heat-100 focus:ring-1 focus:ring-heat-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="absolute right-12 top-1/2 -translate-y-1/2 text-black-alpha-48 hover:text-black-alpha-72"
+                      >
+                        {showApiKey ? (
+                          <EyeOff className="w-18 h-18" />
+                        ) : (
+                          <Eye className="w-18 h-18" />
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="flex gap-8">
+                      <Button
+                        onClick={saveCustomApiKey}
+                        disabled={savingApiKey || !customApiKey}
+                        variant="secondary"
+                        className="flex items-center gap-8"
+                      >
+                        {savingApiKey ? (
+                          <>
+                            <div className="animate-spin rounded-full h-16 w-16 border-2 border-black-alpha-32 border-t-transparent" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-16 h-16" />
+                            Save Key
+                          </>
+                        )}
+                      </Button>
+
+                      {hasCustomKey && (
+                        <button
+                          onClick={() => {
+                            setCustomApiKey("");
+                            setSavingApiKey(true);
+                            supabase
+                              .from("user_preferences")
+                              .update({ firecrawl_custom_api_key: null })
+                              .eq("user_id", user?.id)
+                              .then(() => {
+                                setHasCustomKey(false);
+                                setApiKeyMessage("API key removed");
+                                setSavingApiKey(false);
+                                setTimeout(() => setApiKeyMessage(""), 3000);
+                              });
+                          }}
+                          disabled={savingApiKey}
+                          className="px-16 py-8 rounded-6 text-label-medium text-accent-crimson hover:bg-accent-crimson/10 transition-colors disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {apiKeyMessage && (
+                      <div
+                        className={`flex items-start gap-8 p-12 rounded-8 ${
+                          apiKeyMessage.includes("successfully") ||
+                          apiKeyMessage.includes("removed")
+                            ? "bg-accent-forest/10 text-accent-forest border border-accent-forest/20"
+                            : "bg-accent-crimson/10 text-accent-crimson border border-accent-crimson/20"
+                        }`}
+                      >
+                        {apiKeyMessage.includes("successfully") ||
+                        apiKeyMessage.includes("removed") ? (
+                          <Check className="w-16 h-16 mt-2 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-16 h-16 mt-2 shrink-0" />
+                        )}
+                        <span className="text-body-small">{apiKeyMessage}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -108,8 +108,8 @@ export async function updateStep(
 
 /**
  * Gets the Firecrawl API key for a user.
- * Returns the user's key if available and active, otherwise returns null.
- * No fallback to shared key - each user must have their own API key.
+ * Priority: 1) Custom API key, 2) Auto-generated key if active
+ * Returns null if no valid key is available.
  */
 export async function getFirecrawlKeyForUser(
   supabase: any,
@@ -118,7 +118,7 @@ export async function getFirecrawlKeyForUser(
   try {
     const { data, error } = await supabase
       .from("user_preferences")
-      .select("firecrawl_api_key, firecrawl_key_status")
+      .select("firecrawl_api_key, firecrawl_key_status, firecrawl_custom_api_key")
       .eq("user_id", userId)
       .single();
 
@@ -131,11 +131,20 @@ export async function getFirecrawlKeyForUser(
       };
     }
 
-    const { firecrawl_api_key, firecrawl_key_status } = data;
+    const { firecrawl_api_key, firecrawl_key_status, firecrawl_custom_api_key } = data;
 
-    // If key exists and is active, use it
+    // Priority 1: Use custom API key if available
+    if (firecrawl_custom_api_key) {
+      console.log(`[Firecrawl] Using user's custom API key`);
+      return {
+        apiKey: firecrawl_custom_api_key,
+        usedFallback: false,
+      };
+    }
+
+    // Priority 2: Use auto-generated key if active
     if (firecrawl_api_key && firecrawl_key_status === "active") {
-      console.log(`[Firecrawl] Using user's personal API key`);
+      console.log(`[Firecrawl] Using user's auto-generated API key`);
       return {
         apiKey: firecrawl_api_key,
         usedFallback: false,
@@ -144,7 +153,7 @@ export async function getFirecrawlKeyForUser(
 
     // No valid key found - log the reason
     let fallbackReason: string;
-    if (!firecrawl_api_key) {
+    if (!firecrawl_api_key && !firecrawl_custom_api_key) {
       fallbackReason = "no_api_key";
     } else if (firecrawl_key_status === "pending") {
       fallbackReason = "key_pending";

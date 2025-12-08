@@ -408,6 +408,27 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
                 `Firecrawl returned 401: ${toolResult.error}`
               );
             }
+
+            // Check for 402 Payment Required errors - disable all user scouts and throw
+            if (hasError && toolResult?.error?.includes('402')) {
+              console.error(`[Firecrawl] 402 Payment Required - disabling all scouts for user ${scout.user_id}`);
+
+              // Disable ALL scouts for this user
+              await supabase
+                .from("scouts")
+                .update({ is_active: false })
+                .eq("user_id", scout.user_id);
+
+              // Mark key as invalid
+              await markFirecrawlKeyInvalid(
+                supabase,
+                scout.user_id,
+                `Firecrawl returned 402: Insufficient credits. Please add your own API key in Settings.`
+              );
+
+              // Throw a specific error that will be caught and shown to the user
+              throw new Error(`Firecrawl API credits exhausted. All your scouts have been paused. Please add your own Firecrawl API key in Settings → Firecrawl Integration → Custom API Key. Get your key at https://www.firecrawl.dev/app/api-keys`);
+            }
           } catch (error: any) {
             console.error(`Tool execution error for ${toolName}:`, error);
             toolResult = { error: error.message, query: toolArgs.query || toolArgs.url };
