@@ -15,6 +15,7 @@ export interface Scout {
   frequency: "daily" | "every_3_days" | "weekly" | null;
   is_active: boolean;
   last_run_at: string | null;
+  consecutive_failures: number;
 }
 
 export type FirecrawlKeyStatus = "pending" | "active" | "fallback" | "failed" | "invalid";

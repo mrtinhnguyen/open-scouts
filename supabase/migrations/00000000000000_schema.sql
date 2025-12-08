@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS scouts (
   frequency TEXT CHECK (frequency IN ('daily', 'every_3_days', 'weekly')),
   is_active BOOLEAN DEFAULT false,
   last_run_at TIMESTAMP WITH TIME ZONE,
+  consecutive_failures INT DEFAULT 0, -- Track consecutive failed executions, scout disabled after 3
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

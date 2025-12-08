@@ -705,10 +705,13 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
         .eq("id", executionId);
     }
 
-    // Update scout last_run_at
+    // Update scout: reset consecutive failures and update last_run_at
     await supabase
       .from("scouts")
-      .update({ last_run_at: new Date().toISOString() })
+      .update({
+        last_run_at: new Date().toISOString(),
+        consecutive_failures: 0 // Reset on successful execution
+      })
       .eq("id", scout.id);
 
     // Log Firecrawl usage for monitoring
@@ -754,5 +757,25 @@ REMINDER: Write your final response like a NEWS BRIEF. DO NOT mention your proce
         error_message: error.message,
       })
       .eq("id", executionId);
+
+    // Update scout: increment consecutive failures and update last_run_at
+    // This ensures the scout won't run again until the next scheduled time
+    const newFailureCount = (scout.consecutive_failures || 0) + 1;
+    const shouldDisable = newFailureCount >= 3;
+
+    await supabase
+      .from("scouts")
+      .update({
+        last_run_at: new Date().toISOString(),
+        consecutive_failures: newFailureCount,
+        ...(shouldDisable && { is_active: false })
+      })
+      .eq("id", scout.id);
+
+    if (shouldDisable) {
+      console.warn(`[${scout.title}] Scout disabled after ${newFailureCount} consecutive failures`);
+    } else {
+      console.warn(`[${scout.title}] Consecutive failure ${newFailureCount}/3`);
+    }
   }
 }
