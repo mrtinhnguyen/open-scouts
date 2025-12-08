@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient, supabaseServer } from "@/lib/supabase/server";
+import {
+  createServerSupabaseClient,
+  supabaseServer,
+} from "@/lib/supabase/server";
 
 // Admin email domain check
 const ADMIN_EMAIL_DOMAIN = "@sideguide.dev";
@@ -7,7 +10,10 @@ const ADMIN_EMAIL_DOMAIN = "@sideguide.dev";
 // Helper to verify admin access
 async function verifyAdminAccess() {
   const supabase = await createServerSupabaseClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
     return { error: "Not authenticated", status: 401 };
@@ -27,18 +33,19 @@ export async function GET() {
     if ("error" in authResult) {
       return NextResponse.json(
         { error: authResult.error },
-        { status: authResult.status }
+        { status: authResult.status },
       );
     }
 
     // Get all users from auth.users via service role
-    const { data: authUsers, error: usersError } = await supabaseServer.auth.admin.listUsers();
+    const { data: authUsers, error: usersError } =
+      await supabaseServer.auth.admin.listUsers();
 
     if (usersError) {
       console.error("Error fetching users:", usersError);
       return NextResponse.json(
         { error: "Failed to fetch users" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -70,14 +77,17 @@ export async function GET() {
     }
 
     // Build a map of user stats
-    const userStatsMap = new Map<string, {
-      scoutCount: number;
-      executionCount: number;
-      completedExecutions: number;
-      failedExecutions: number;
-      firecrawlStatus: string | null;
-      hasLocation: boolean;
-    }>();
+    const userStatsMap = new Map<
+      string,
+      {
+        scoutCount: number;
+        executionCount: number;
+        completedExecutions: number;
+        failedExecutions: number;
+        firecrawlStatus: string | null;
+        hasLocation: boolean;
+      }
+    >();
 
     // Count scouts per user
     if (scoutCounts) {
@@ -169,7 +179,10 @@ export async function GET() {
     });
 
     // Sort by creation date (newest first)
-    users.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    users.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
     return NextResponse.json({
       users,
@@ -182,7 +195,7 @@ export async function GET() {
     console.error("[admin] Error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -195,7 +208,7 @@ export async function DELETE(req: Request) {
     if ("error" in authResult) {
       return NextResponse.json(
         { error: authResult.error },
-        { status: authResult.status }
+        { status: authResult.status },
       );
     }
 
@@ -205,7 +218,7 @@ export async function DELETE(req: Request) {
     if (!userId) {
       return NextResponse.json(
         { error: "userId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -213,14 +226,15 @@ export async function DELETE(req: Request) {
     if (userId === adminUser.id) {
       return NextResponse.json(
         { error: "Cannot delete your own account" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     console.log(`[admin] Deleting user ${userId}...`);
 
     // Get user info before deletion for logging
-    const { data: targetUser } = await supabaseServer.auth.admin.getUserById(userId);
+    const { data: targetUser } =
+      await supabaseServer.auth.admin.getUserById(userId);
     const userEmail = targetUser?.user?.email || "unknown";
 
     // Delete from auth.users - this will CASCADE to:
@@ -230,13 +244,14 @@ export async function DELETE(req: Request) {
     //     - scout_execution_steps (ON DELETE CASCADE from scout_executions)
     // - user_preferences (ON DELETE CASCADE)
     // - firecrawl_usage_logs (ON DELETE CASCADE)
-    const { error: deleteError } = await supabaseServer.auth.admin.deleteUser(userId);
+    const { error: deleteError } =
+      await supabaseServer.auth.admin.deleteUser(userId);
 
     if (deleteError) {
       console.error(`[admin] Error deleting user ${userId}:`, deleteError);
       return NextResponse.json(
         { error: `Failed to delete user: ${deleteError.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -251,7 +266,7 @@ export async function DELETE(req: Request) {
     console.error("[admin] Delete error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

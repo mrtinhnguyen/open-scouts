@@ -73,19 +73,23 @@ export function ScoutChecklistTool({
   // Form values
   const [title, setTitle] = useState(currentScout.title || "");
   const [goal, setGoal] = useState(currentScout.goal || "");
-  const [description, setDescription] = useState(currentScout.description || "");
+  const [description, setDescription] = useState(
+    currentScout.description || "",
+  );
   const [searchQueries, setSearchQueries] = useState<string[]>(
-    currentScout.search_queries || []
+    currentScout.search_queries || [],
   );
   const [newQuery, setNewQuery] = useState("");
   const [frequency, setFrequency] = useState<
     "daily" | "every_3_days" | "weekly" | null
   >(currentScout.frequency || null);
-  const [locationPreference, setLocationPreference] = useState<"current" | "any">(
+  const [locationPreference, setLocationPreference] = useState<
+    "current" | "any"
+  >(
     currentScout.location?.latitude === 0 &&
       currentScout.location?.longitude === 0
       ? "any"
-      : "current"
+      : "current",
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -121,7 +125,9 @@ export function ScoutChecklistTool({
           break;
         case "location":
           if (locationPreference === "any") {
-            updateData = { location: { city: "any", latitude: 0, longitude: 0 } };
+            updateData = {
+              location: { city: "any", latitude: 0, longitude: 0 },
+            };
           } else if (currentLocation) {
             updateData = { location: currentLocation };
           }
@@ -234,7 +240,7 @@ export function ScoutChecklistTool({
       label: "Search Queries",
       value: currentScout.search_queries,
       filled: Boolean(
-        currentScout.search_queries && currentScout.search_queries.length > 0
+        currentScout.search_queries && currentScout.search_queries.length > 0,
       ),
       description:
         currentScout.search_queries && currentScout.search_queries.length > 0
@@ -554,9 +560,7 @@ export function ScoutChecklistTool({
                 key={item.key}
                 className={cn(
                   "p-6 rounded-6 transition-colors",
-                  editMode === item.key
-                    ? "bg-muted/40"
-                    : "hover:bg-muted/30"
+                  editMode === item.key ? "bg-muted/40" : "hover:bg-muted/30",
                 )}
               >
                 <div className="flex items-start gap-8">

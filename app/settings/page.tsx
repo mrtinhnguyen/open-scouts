@@ -136,11 +136,15 @@ export default function SettingsPage() {
 
     try {
       // Get fresh session from supabase client to ensure we have a valid token
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
 
       if (!currentSession?.access_token) {
         setTestStatus("error");
-        setTestMessage("You must be logged in to send a test email. Please refresh the page and try again.");
+        setTestMessage(
+          "You must be logged in to send a test email. Please refresh the page and try again.",
+        );
         setSendingTest(false);
         return;
       }

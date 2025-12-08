@@ -41,11 +41,7 @@ export async function POST(req: Request) {
   const supabase = await createServerSupabaseClient();
   const [authResult, scoutResult] = await Promise.all([
     supabase.auth.getUser(),
-    supabaseServer
-      .from("scouts")
-      .select("*")
-      .eq("id", scoutId)
-      .single(),
+    supabaseServer.from("scouts").select("*").eq("id", scoutId).single(),
   ]);
 
   const user = authResult.data?.user;

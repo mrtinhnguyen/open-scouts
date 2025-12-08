@@ -532,9 +532,7 @@ export function ScoutSettingsModal({
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">
-                    {frequencyLabels.daily}
-                  </SelectItem>
+                  <SelectItem value="daily">{frequencyLabels.daily}</SelectItem>
                   <SelectItem value="every_3_days">
                     {frequencyLabels.every_3_days}
                   </SelectItem>

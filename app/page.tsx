@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef, memo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  Suspense,
+  useRef,
+  memo,
+  useCallback,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ScoutInput } from "@/components/scout-input";
@@ -39,109 +46,113 @@ function HomeContent() {
   const [query, setQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submitQuery = useCallback(async (queryText: string) => {
-    if (!queryText.trim()) {
-      return;
-    }
+  const submitQuery = useCallback(
+    async (queryText: string) => {
+      if (!queryText.trim()) {
+        return;
+      }
 
-    setIsSubmitting(true);
+      setIsSubmitting(true);
 
-    try {
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        // Get current user
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      // Get user's location from preferences
-      let location: {
-        city: string;
-        state?: string;
-        country?: string;
-        latitude: number;
-        longitude: number;
-      } | null = null;
+        // Get user's location from preferences
+        let location: {
+          city: string;
+          state?: string;
+          country?: string;
+          latitude: number;
+          longitude: number;
+        } | null = null;
 
-      if (user?.id) {
-        const { data: prefs } = await supabase
-          .from("user_preferences")
-          .select("location")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        if (user?.id) {
+          const { data: prefs } = await supabase
+            .from("user_preferences")
+            .select("location")
+            .eq("user_id", user.id)
+            .maybeSingle();
 
-        if (prefs?.location) {
-          const userLoc = prefs.location;
-          location = {
-            city: userLoc.city || userLoc.country || "Unknown",
-            state: userLoc.state || undefined,
-            country: userLoc.country || undefined,
-            latitude: userLoc.latitude || 0,
-            longitude: userLoc.longitude || 0,
-          };
+          if (prefs?.location) {
+            const userLoc = prefs.location;
+            location = {
+              city: userLoc.city || userLoc.country || "Unknown",
+              state: userLoc.state || undefined,
+              country: userLoc.country || undefined,
+              latitude: userLoc.latitude || 0,
+              longitude: userLoc.longitude || 0,
+            };
+          }
         }
-      }
 
-      // Check scout limit (max 5 per user)
-      const { count: scoutCount, error: countError } = await supabase
-        .from("scouts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user?.id);
+        // Check scout limit (max 5 per user)
+        const { count: scoutCount, error: countError } = await supabase
+          .from("scouts")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user?.id);
 
-      if (countError) {
-        console.error("Error checking scout count:", countError);
-        alert("Error checking scout limit. Please try again.");
+        if (countError) {
+          console.error("Error checking scout count:", countError);
+          alert("Error checking scout limit. Please try again.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (scoutCount !== null && scoutCount >= 5) {
+          alert(
+            "You have reached the maximum limit of 5 scouts. Please delete an existing scout to create a new one.",
+          );
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Create new scout with user_id
+        const { data: scoutData, error } = await supabase
+          .from("scouts")
+          .insert({
+            title:
+              queryText.slice(0, 50) + (queryText.length > 50 ? "..." : ""),
+            location: location,
+            user_id: user?.id,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error(
+            "Error creating scout:",
+            error.message,
+            error.code,
+            error.details,
+          );
+          alert(`Error creating scout: ${error.message}`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (scoutData) {
+          // PostHog: Track scout creation
+          posthog.capture("scout_created", {
+            scout_id: scoutData.id,
+            has_location: !!location,
+            query_length: queryText.length,
+          });
+
+          // Redirect to scout page with query as URL parameter
+          router.push(
+            `/scout/${scoutData.id}?initialQuery=${encodeURIComponent(queryText)}`,
+          );
+        }
+      } catch (error) {
+        console.error("Error:", error);
         setIsSubmitting(false);
-        return;
       }
-
-      if (scoutCount !== null && scoutCount >= 5) {
-        alert(
-          "You have reached the maximum limit of 5 scouts. Please delete an existing scout to create a new one.",
-        );
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Create new scout with user_id
-      const { data: scoutData, error } = await supabase
-        .from("scouts")
-        .insert({
-          title: queryText.slice(0, 50) + (queryText.length > 50 ? "..." : ""),
-          location: location,
-          user_id: user?.id,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error(
-          "Error creating scout:",
-          error.message,
-          error.code,
-          error.details,
-        );
-        alert(`Error creating scout: ${error.message}`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (scoutData) {
-        // PostHog: Track scout creation
-        posthog.capture("scout_created", {
-          scout_id: scoutData.id,
-          has_location: !!location,
-          query_length: queryText.length,
-        });
-
-        // Redirect to scout page with query as URL parameter
-        router.push(
-          `/scout/${scoutData.id}?initialQuery=${encodeURIComponent(queryText)}`,
-        );
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setIsSubmitting(false);
-    }
-  }, [router]);
+    },
+    [router],
+  );
 
   // Handle pending query after login
   useEffect(() => {

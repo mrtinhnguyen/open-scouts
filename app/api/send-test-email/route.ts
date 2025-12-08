@@ -9,13 +9,13 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
 
     // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Check rate limit - get last test email time from user_preferences
@@ -31,13 +31,15 @@ export async function POST(request: NextRequest) {
       const elapsed = now - lastSentAt;
 
       if (elapsed < TEST_EMAIL_COOLDOWN_MS) {
-        const remainingSeconds = Math.ceil((TEST_EMAIL_COOLDOWN_MS - elapsed) / 1000);
+        const remainingSeconds = Math.ceil(
+          (TEST_EMAIL_COOLDOWN_MS - elapsed) / 1000,
+        );
         return NextResponse.json(
           {
             error: `Please wait ${remainingSeconds} seconds before sending another test email`,
-            cooldownRemaining: remainingSeconds
+            cooldownRemaining: remainingSeconds,
           },
-          { status: 429 }
+          { status: 429 },
         );
       }
     }
@@ -48,26 +50,29 @@ export async function POST(request: NextRequest) {
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
         { error: "Supabase configuration missing" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Call the edge function with the anon key
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-test-email`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${supabaseAnonKey}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/send-test-email`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id }),
       },
-      body: JSON.stringify({ userId: user.id }),
-    });
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
       return NextResponse.json(
         { error: data.error || "Failed to send test email" },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -79,12 +84,10 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id);
     } else {
       // Create preferences row if it doesn't exist
-      await supabase
-        .from("user_preferences")
-        .insert({
-          user_id: user.id,
-          last_test_email_at: new Date().toISOString()
-        });
+      await supabase.from("user_preferences").insert({
+        user_id: user.id,
+        last_test_email_at: new Date().toISOString(),
+      });
     }
 
     return NextResponse.json(data);
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest) {
     console.error("[send-test-email] Error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

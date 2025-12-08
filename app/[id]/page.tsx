@@ -224,10 +224,7 @@ export default function ExecutionsPage() {
 
   // Clear triggering state when a new execution appears in the database
   useEffect(() => {
-    if (
-      triggering &&
-      executions.length > executionCountBeforeTrigger.current
-    ) {
+    if (triggering && executions.length > executionCountBeforeTrigger.current) {
       // New execution has appeared - clear the triggering state
       // hasRunningExecution will now take over to keep button disabled
       setTriggering(false);
@@ -500,9 +497,7 @@ export default function ExecutionsPage() {
                     <Play className="w-16 h-16" />
                   )}
                   {isOnCooldown && <Clock className="w-16 h-16" />}
-                  {isOnCooldown
-                    ? formatCooldown(cooldownRemaining)
-                    : "Run Now"}
+                  {isOnCooldown ? formatCooldown(cooldownRemaining) : "Run Now"}
                 </Button>
 
                 {/* Mobile menu button */}

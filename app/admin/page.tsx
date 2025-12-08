@@ -197,9 +197,7 @@ export default function AdminPage() {
           </span>
         );
       default:
-        return (
-          <span className="text-mono-x-small text-black-alpha-32">-</span>
-        );
+        return <span className="text-mono-x-small text-black-alpha-32">-</span>;
     }
   };
 
@@ -395,7 +393,9 @@ export default function AdminPage() {
               {/* Footer with pagination */}
               <div className="px-16 py-12 border-t border-border-faint bg-background-base flex items-center justify-between">
                 <p className="text-mono-x-small font-mono text-black-alpha-32">
-                  Showing {startIndex + 1}-{Math.min(endIndex, data.users.length)} of {data.users.length} users
+                  Showing {startIndex + 1}-
+                  {Math.min(endIndex, data.users.length)} of {data.users.length}{" "}
+                  users
                 </p>
 
                 {totalPages > 1 && (
@@ -409,19 +409,21 @@ export default function AdminPage() {
                     </button>
 
                     <div className="flex items-center gap-4">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => goToPage(page)}
-                          className={`min-w-28 h-28 rounded-6 text-mono-x-small font-mono transition ${
-                            page === currentPage
-                              ? "bg-heat-100 text-white"
-                              : "hover:bg-black-alpha-4 text-black-alpha-48"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page)}
+                            className={`min-w-28 h-28 rounded-6 text-mono-x-small font-mono transition ${
+                              page === currentPage
+                                ? "bg-heat-100 text-white"
+                                : "hover:bg-black-alpha-4 text-black-alpha-48"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ),
+                      )}
                     </div>
 
                     <button

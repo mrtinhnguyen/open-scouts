@@ -60,17 +60,17 @@ export async function POST(req: Request) {
 
       if (elapsed < MANUAL_RUN_COOLDOWN_MS) {
         const remainingSeconds = Math.ceil(
-          (MANUAL_RUN_COOLDOWN_MS - elapsed) / 1000
+          (MANUAL_RUN_COOLDOWN_MS - elapsed) / 1000,
         );
         console.log(
-          `[scout/execute] Rate limited: ${remainingSeconds}s remaining for scout ${scoutId}`
+          `[scout/execute] Rate limited: ${remainingSeconds}s remaining for scout ${scoutId}`,
         );
         return NextResponse.json(
           {
             error: `Please wait ${Math.ceil(remainingSeconds / 60)} minutes before running this scout again`,
             cooldownRemaining: remainingSeconds,
           },
-          { status: 429 }
+          { status: 429 },
         );
       }
     }
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
         userDailyExecutions >= MAX_DAILY_EXECUTIONS_PER_USER
       ) {
         console.log(
-          `[scout/execute] Daily limit reached: ${userDailyExecutions}/${MAX_DAILY_EXECUTIONS_PER_USER} for user ${user.id}`
+          `[scout/execute] Daily limit reached: ${userDailyExecutions}/${MAX_DAILY_EXECUTIONS_PER_USER} for user ${user.id}`,
         );
         return NextResponse.json(
           {
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
             dailyLimit: MAX_DAILY_EXECUTIONS_PER_USER,
             currentCount: userDailyExecutions,
           },
-          { status: 429 }
+          { status: 429 },
         );
       }
     }
