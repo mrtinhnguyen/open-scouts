@@ -35,8 +35,8 @@ Open Scouts is an AI-powered monitoring platform that lets you create "scouts" -
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/leonardogrig/open-scout
-cd open-scout
+git clone https://github.com/firecrawl/open-scouts
+cd open-scouts
 bun install  # or: npm install / pnpm install
 ```
 
