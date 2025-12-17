@@ -165,11 +165,27 @@ Email notifications are sent to your account email when scouts find results.
 
 ### 9. Firecrawl Configuration
 
-Open Scouts uses [Firecrawl](https://firecrawl.dev) for web scraping and search. There are two ways to configure it:
+Open Scouts uses [Firecrawl](https://firecrawl.dev) for web scraping and search.
 
-#### Option A: Standard API Key (Recommended for Contributors)
+> **📌 Important: No Environment Variable Configuration Required**
+>
+> **You do NOT need to configure a Firecrawl API key in your environment variables.** Each user can simply add their own custom Firecrawl API key directly in the **Settings** page within the app. This is the recommended approach for most users.
 
-This is the simplest setup - all users share a single API key:
+#### Custom API Key (Recommended)
+
+The simplest way to use Open Scouts:
+
+1. Sign up at [firecrawl.dev](https://firecrawl.dev)
+2. Get your API key from the [dashboard](https://www.firecrawl.dev/app/api-keys)
+3. Go to **Settings** in the Open Scouts app
+4. Enter your Firecrawl API key in the **Firecrawl Integration** section
+5. Click **Save** - you're ready to go!
+
+Each user manages their own API key, and usage is tracked to their individual Firecrawl account.
+
+#### Server-Side API Key (Optional - For Self-Hosting)
+
+If you're self-hosting and want to provide a shared API key for all users:
 
 1. Sign up at [firecrawl.dev](https://firecrawl.dev)
 2. Get your API key from the [dashboard](https://www.firecrawl.dev/app/api-keys)
@@ -182,34 +198,18 @@ This is the simplest setup - all users share a single API key:
    npx supabase secrets set FIRECRAWL_API_KEY=fc-your-key-here
    ```
 
-#### Option B: Partner Integration (For Production Deployments)
+**Note:** Users who add their own custom API key in Settings will use their personal key instead of the server-side shared key.
 
-If you're deploying Open Scouts for multiple users and want per-user API key management:
+#### Partner Integration (Enterprise - Closed Beta)
 
-1. **Contact Firecrawl** to obtain a partner key
-2. Set your partner key in `.env`:
-   ```bash
-   FIRECRAWL_API_KEY=your-partner-key
-   ```
-3. Set the edge function secret:
-   ```bash
-   npx supabase secrets set FIRECRAWL_API_KEY=your-partner-key
-   ```
+> **⚠️ The Partner Key feature is currently in closed beta and only available for enterprise customers.** This feature is not publicly available.
 
-**How Partner Integration Works:**
+**How Partner Integration Works (when available):**
 - When users sign up, a unique Firecrawl API key is automatically created for them
 - Each user's usage is tracked separately
 - Keys are stored securely in the `user_preferences` table
 - If a user's key fails, the system automatically falls back to the shared partner key
 - Users can view their connection status in **Settings → Firecrawl Integration**
-
-**Benefits:**
-- Better usage tracking per user
-- Ability to revoke individual user keys
-- Automatic key provisioning on signup
-- Self-healing: invalid keys are detected and fallback kicks in
-
-**Note:** The partner integration is fully backwards compatible. If you don't have a partner key, the system works exactly like Option A with a shared key.
 
 ### 10. Run the Development Server
 
