@@ -1,6 +1,6 @@
 # PostHog Integration
 
-Open Scouts uses [PostHog](https://posthog.com) for product analytics to understand how users interact with the platform and measure product health.
+LoopAI uses [PostHog](https://posthog.com) for product analytics to understand how users interact with the platform and measure product health.
 
 ## What We Track
 

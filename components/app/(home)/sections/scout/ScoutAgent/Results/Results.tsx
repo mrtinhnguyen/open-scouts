@@ -87,7 +87,7 @@ export default function ScoutAgentResults({
   );
 }
 
-const QUERY = "Taylor Swift LA";
+const QUERY = "Airdrops & Token launches";
 
 const Input = ({
   step,
@@ -215,45 +215,45 @@ const Field = ({ index, value: _value }: { index: number; value: string }) => {
 
 export const data = [
   {
-    title: "Taylor Swift | The Eras Tour - SoFi Stadium",
+    title: "Digital Dreams NFT Collection - Minting Live",
     description:
-      "Section 234, Row 15, Seats 8-9. Official resale tickets available.",
-    url: "ticketmaster.com",
-    price: "$485",
+      "10,000 unique generative art NFTs on Ethereum. Floor price 0.08 ETH. Whitelist spots available, 2,500/10,000 minted.",
+    url: "opensea.io",
+    price: "0.08 ETH",
   },
   {
-    title: "Eras Tour LA - Floor Seats Available",
+    title: "YieldMax DeFi Protocol - High APY Launch",
     description:
-      "Premium floor seats, Section A, Row 12. Verified seller with instant transfer.",
-    url: "stubhub.com",
-    price: "$1,250",
+      "New yield farming protocol on Base chain. 12.5% APY on USDC deposits. TVL reached $5M in first hour. Liquidity mining active.",
+    url: "yieldmax.xyz",
+    price: "12.5% APY",
   },
   {
-    title: "Taylor Swift Concert Tickets - Los Angeles",
+    title: "Arbitrum Airdrop - $ARB Token Distribution",
     description:
-      "Upper level seats with great view. Section 312, Row 8. Best value option.",
-    url: "vividseats.com",
-    price: "$325",
+      "Major airdrop for early Layer 2 users. Eligibility check available now. Claim window opens in 48 hours. Estimated value: $500-2000.",
+    url: "arbitrum.io",
+    price: "$500-2K",
   },
   {
-    title: "VIP Package - Eras Tour SoFi Stadium",
+    title: "Base Layer 2 Scaling Solution - New Features",
     description:
-      "Includes early entry, exclusive merch, and premium seating in Section 112.",
-    url: "ticketmaster.com",
-    price: "$2,100",
+      "Latest Base network update with reduced gas fees and faster transactions. New bridge contracts deployed. Developer grants available.",
+    url: "base.org",
+    price: "Free",
   },
   {
-    title: "Last Minute Eras Tour Tickets",
+    title: "New Token Listing - $LOOP on Binance",
     description:
-      "Verified resale, Section 118, Row 22. Mobile tickets, instant delivery.",
-    url: "seatgeek.com",
-    price: "$590",
+      "LoopAI token listing on Binance exchange. Trading pairs: LOOP/USDT, LOOP/BTC. Launch price: $0.15. Trading starts in 2 hours.",
+    url: "binance.com",
+    price: "$0.15",
   },
   {
-    title: "Taylor Swift LA Night 2 - Great Seats",
+    title: "CryptoPunks Floor Price Drop - Buying Opportunity",
     description:
-      "Section 134, Row 5. Close to stage with excellent sightlines.",
-    url: "stubhub.com",
-    price: "$875",
+      "Rare CryptoPunk #7523 available at 45 ETH. Floor price dropped 15% in last 24h. Verified seller with instant transfer on OpenSea.",
+    url: "opensea.io",
+    price: "45 ETH",
   },
 ];

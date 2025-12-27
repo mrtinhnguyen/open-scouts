@@ -100,7 +100,7 @@ function ScoutChatsChat({
           <div className="absolute top-19 z-[1] -right-3 size-16 rounded-full bg-[#EFEFEF]" />
 
           <div className="bg-black-alpha-5 text-body-medium py-8 px-16 rounded-full">
-            Scout for Taylor Swift tickets
+            Scout for new NFT drops
           </div>
         </motion.div>
       )}
@@ -174,12 +174,12 @@ const ResponsePart = ({
   useEffect(() => {
     let index = 0;
     const lines = [
-      "I'll help you scout for Taylor Swift tickets! To set up your",
+      "I'll help you scout for new NFT drops! To set up your",
       "scout, I need a few details:",
       "",
-      "Which city",
-      "should I search in?",
-      "And what's your maximum budget per ticket?",
+      "Which blockchain",
+      "should I monitor?",
+      "And what's your maximum mint price?",
     ];
 
     const strSlice = (strIndex: number) => {
@@ -262,7 +262,7 @@ const ResponsePart = ({
   );
 };
 
-const PROMPT = "Scout for Taylor Swift tickets";
+const PROMPT = "Scout for new NFT drops";
 
 const InputPart = ({
   step,

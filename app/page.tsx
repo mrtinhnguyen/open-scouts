@@ -28,12 +28,12 @@ const MemoizedBackgroundOuterPiece = memo(BackgroundOuterPiece);
 const MemoizedHomeHeroBackground = memo(HomeHeroBackground);
 
 const placeholders = [
-  "Scout for Taylor Swift tickets in my city...",
-  "Tell me when Mr. Beast comes to my city...",
-  "Scout for new Chinese restaurants near me...",
-  "Scout for Tesla Cybertruck available for test drive...",
-  "Scout for cheap flights to Tokyo next month...",
-  "Scout for PS5 restocks at local stores...",
+  "Scout for new NFT drops and minting opportunities...",
+  "Tell me when new DeFi protocols launch with high APY...",
+  "Scout for crypto airdrops and token launches...",
+  "Scout for Web3 job opportunities in blockchain...",
+  "Scout for new Layer 2 solutions and scaling updates...",
+  "Scout for crypto exchange listings and new trading pairs...",
 ];
 
 function HomeContent() {
@@ -218,12 +218,10 @@ function HomeContent() {
             <div className="max-w-5xl w-full mx-auto">
               <div className="text-center mb-6">
                 <h1 className="text-4xl md:text-7xl text-[#262626] mb-4">
-                  Open <span className="text-heat-100">Scouts</span>
+                  <span className="text-heat-100">Loop</span>AI
                 </h1>
                 <p className="text-lg md:text-lg text-gray-600">
-                  Create AI scouts that continuously search and notify you when
-                  <br></br>
-                  they find what you&apos;re looking for
+                  Your Personal Intelligence Network
                 </p>
               </div>
 

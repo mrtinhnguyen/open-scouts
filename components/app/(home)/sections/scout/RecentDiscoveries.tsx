@@ -117,25 +117,25 @@ const previewDiscoveries = [
     id: "preview-1",
     scout_id: "preview",
     summary_text:
-      "Found 3 Taylor Swift concert tickets under $500 for the LA show on March 15th. Section 234, Row 12.",
+      "New NFT collection 'Digital Dreams' minting live now on Ethereum. Floor price 0.08 ETH, 2,500/10,000 minted. Whitelist spots available.",
     created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
-    scouts: { title: "Taylor Swift Tickets LA" },
+    scouts: { title: "NFT Drops & Minting" },
   },
   {
     id: "preview-2",
     scout_id: "preview",
     summary_text:
-      "New PS5 restock detected at Best Buy downtown location. Limited quantities available, bundle deals included.",
+      "New DeFi protocol 'YieldMax' launched on Base with 12.5% APY on USDC. Liquidity mining rewards active. TVL reached $5M in first hour.",
     created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    scouts: { title: "PS5 Restock Alerts" },
+    scouts: { title: "High APY DeFi Protocols" },
   },
   {
     id: "preview-3",
     scout_id: "preview",
     summary_text:
-      "Highly-rated new ramen restaurant opened 2 miles from you. 4.8 stars with 50+ reviews. Reservations available.",
+      "Major crypto airdrop announced: $ARB token distribution for early Layer 2 users. Eligibility check available. Claim window opens in 48 hours.",
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    scouts: { title: "New Restaurants Near Me" },
+    scouts: { title: "Crypto Airdrops & Token Launches" },
   },
 ];
 

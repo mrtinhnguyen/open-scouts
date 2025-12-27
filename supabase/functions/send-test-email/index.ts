@@ -19,7 +19,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Open Scouts <onboarding@resend.dev>";
+    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "LoopAI <onboarding@resend.dev>";
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       throw new Error("Supabase configuration missing");
@@ -127,12 +127,12 @@ serve(async (req) => {
                 <br>• Your scouts run automatically based on their frequency settings
                 <br>• When a scout finds something interesting, the AI agent analyzes it
                 <br>• If results are found, you'll get an instant email notification
-                <br>• All results are also available in your Open Scouts dashboard
+                <br>• All results are also available in your LoopAI dashboard
               </div>
 
               <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e5e5;">
-                <a href="https://openscout.dev" style="display: inline-block; background-color: #FF4C00; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 14px;">
-                  Go to Open Scout
+                <a href="https://loopai.dev" style="display: inline-block; background-color: #FF4C00; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                  Go to LoopAI
                 </a>
               </div>
             </td>
@@ -142,7 +142,7 @@ serve(async (req) => {
           <tr>
             <td style="background-color: #f9f9f9; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e5e5;">
               <p style="margin: 0 0 10px 0; color: #999; font-size: 13px;">
-                This is a test email sent from Open Scouts.
+                This is a test email sent from LoopAI.
               </p>
               <p style="margin: 0; color: #999; font-size: 13px;">
                 Notifications are sent to your account email.
@@ -161,7 +161,7 @@ serve(async (req) => {
     const emailPayload = {
       from: RESEND_FROM_EMAIL,
       to: userEmail,
-      subject: "Test Email - Open Scouts Notifications",
+      subject: "Test Email - LoopAI Notifications",
       html: emailHtml,
     };
 

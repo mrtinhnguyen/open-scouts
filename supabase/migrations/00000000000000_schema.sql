@@ -1,5 +1,5 @@
 -- =============================================================================
--- OPEN SCOUTS - COMPLETE DATABASE SCHEMA
+-- LOOPAI - COMPLETE DATABASE SCHEMA
 -- Single consolidated migration representing the full current state
 -- =============================================================================
 

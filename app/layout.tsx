@@ -49,9 +49,9 @@ const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
 });
 const meta = {
-  title: "Open Scouts - AI-Powered Monitoring & Search",
+  title: "LoopAI - Your Personal Intelligence Network",
   description:
-    "Create AI scouts that continuously search and notify you when they find what you're looking for. Open-source monitoring powered by AI.",
+    "Your Personal Intelligence Network. Create AI scouts that continuously search and notify you when they find what you're looking for.",
   cardImage: "/og.png",
   robots: "follow, index",
   favicon: "/favicon.png",
@@ -64,7 +64,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: meta.description,
     referrer: "origin-when-cross-origin",
     keywords: [
-      "Open Scouts",
+      "LoopAI",
       "AI Monitoring",
       "Web Search",
       "AI",

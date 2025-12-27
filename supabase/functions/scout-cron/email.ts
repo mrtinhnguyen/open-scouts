@@ -20,7 +20,7 @@ export async function sendScoutSuccessEmail(
 ): Promise<void> {
   try {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "Open Scouts <onboarding@resend.dev>";
+    const RESEND_FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "LoopAI <onboarding@resend.dev>";
 
     if (!RESEND_API_KEY) {
       console.log("RESEND_API_KEY not configured, skipping email notification");
@@ -150,8 +150,8 @@ function formatScoutEmail(scout: Scout, scoutResponse: ScoutResponse): string {
               </div>
 
               <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e5e5;">
-                <a href="https://openscout.dev" style="display: inline-block; background-color: #FF4C00; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 14px;">
-                  View in Open Scouts
+                <a href="https://loopai.dev" style="display: inline-block; background-color: #FF4C00; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                  View in LoopAI
                 </a>
               </div>
             </td>
@@ -161,10 +161,10 @@ function formatScoutEmail(scout: Scout, scoutResponse: ScoutResponse): string {
           <tr>
             <td style="background-color: #f9f9f9; padding: 30px 40px; text-align: center; border-top: 1px solid #e5e5e5;">
               <p style="margin: 0 0 10px 0; color: #999; font-size: 13px;">
-                You're receiving this because you have active scouts in Open Scouts.
+                You're receiving this because you have active scouts in LoopAI.
               </p>
               <p style="margin: 0; color: #999; font-size: 13px;">
-                <a href="https://openscout.dev" style="color: #FF4C00; text-decoration: none;">View your scouts</a>
+                <a href="https://loopai.dev" style="color: #FF4C00; text-decoration: none;">View your scouts</a>
               </p>
             </td>
           </tr>

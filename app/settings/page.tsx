@@ -566,7 +566,7 @@ export default function SettingsPage() {
                     Sponsored Integration
                   </h3>
                   <p className="text-body-small text-black-alpha-48 mb-16">
-                    Open Scouts provides a free Firecrawl API key for you to
+                    LoopAI provides a free Firecrawl API key for you to
                     test the platform. This sponsored integration has limited
                     credits. For unlimited usage, add your own API key below.
                   </p>

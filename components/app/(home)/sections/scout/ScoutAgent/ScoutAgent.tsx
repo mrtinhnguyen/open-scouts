@@ -132,9 +132,9 @@ const formatter = new Intl.NumberFormat("en-US", {
 });
 
 const scoutData = [
-  { label: "Websites searched", value: 127 },
-  { label: "Listings found", value: 2834 },
-  { label: "Price matches", value: 156 },
-  { label: "Available seats", value: 423 },
-  { label: "Best deals", value: 18 },
+  { label: "Protocols monitored", value: 127 },
+  { label: "Opportunities found", value: 2834 },
+  { label: "APY matches", value: 156 },
+  { label: "NFT collections", value: 423 },
+  { label: "Best opportunities", value: 18 },
 ];
