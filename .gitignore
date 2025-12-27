@@ -54,3 +54,4 @@ server/node_modules
 ## TypeScript
 *.tsbuildinfo
 .env*
+.env*
