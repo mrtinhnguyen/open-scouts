@@ -35,14 +35,14 @@ sudo docker --version
 ### 1.2. Cài đặt Docker Compose
 
 ```bash
-# Tải Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
-# Phân quyền thực thi
-sudo chmod +x /usr/local/bin/docker-compose
+# Docker Compose V2 được cài đặt như một plugin của Docker CLI
+# Với Docker CE mới, Docker Compose V2 đã được bao gồm sẵn
 
 # Kiểm tra cài đặt
-docker-compose --version
+docker compose version
+
+# Nếu chưa có, cài đặt Docker Compose plugin
+sudo yum install -y docker-compose-plugin
 ```
 
 ### 1.3. Cấu hình Docker (tùy chọn)
@@ -130,9 +130,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3345
 
-ENV PORT 3000
+ENV PORT 3345
 ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]
@@ -167,7 +167,7 @@ services:
     container_name: loopai-app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3345:3345"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
@@ -234,7 +234,7 @@ Tạo file `/etc/nginx/conf.d/loopai.conf`:
 
 ```nginx
 upstream loopai {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:3345;
     keepalive 64;
 }
 
@@ -293,7 +293,7 @@ sudo systemctl reload nginx
 sudo yum install -y certbot python3-certbot-nginx
 
 # Lấy chứng chỉ SSL
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d loopai.tonyx.dev
 
 # Certbot sẽ tự động cập nhật cấu hình Nginx
 # Chứng chỉ sẽ tự động gia hạn
@@ -303,36 +303,48 @@ Sau khi cài SSL, cập nhật lại file Nginx config để redirect HTTP sang 
 
 ## Bước 6: Build và Deploy ứng dụng
 
-### 6.1. Build Docker image
+### 6.1. Tạo package-lock.json (nếu chưa có)
+
+```bash
+cd /var/www/loopai
+
+# Nếu chưa có package-lock.json, tạo nó bằng cách chạy:
+npm install --package-lock-only
+
+# Hoặc nếu đã có node_modules, chỉ cần:
+npm install
+```
+
+### 6.2. Build Docker image
 
 ```bash
 cd /var/www/loopai
 
 # Build image
-docker-compose build
+docker compose build
 
 # Hoặc build trực tiếp
 docker build -t loopai:latest .
 ```
 
-### 6.2. Chạy ứng dụng
+### 6.3. Chạy ứng dụng
 
 ```bash
-# Chạy với docker-compose
-docker-compose up -d
+# Chạy với docker compose
+docker compose up -d
 
 # Kiểm tra logs
-docker-compose logs -f
+docker compose logs -f
 
 # Kiểm tra container đang chạy
 docker ps
 ```
 
-### 6.3. Kiểm tra ứng dụng
+### 6.4. Kiểm tra ứng dụng
 
 ```bash
 # Kiểm tra từ server
-curl http://localhost:3000
+curl http://localhost:3345
 
 # Kiểm tra từ browser
 # Truy cập http://yourdomain.com hoặc https://yourdomain.com
@@ -371,8 +383,8 @@ After=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/var/www/loopai
-ExecStart=/usr/local/bin/docker-compose up -d
-ExecStop=/usr/local/bin/docker-compose down
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=0
 
 [Install]
@@ -414,9 +426,9 @@ cd /var/www/loopai
 git pull origin main
 
 # Rebuild và restart
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 
 # Xóa images cũ (tùy chọn)
 docker image prune -f
@@ -428,7 +440,7 @@ docker image prune -f
 
 ```bash
 # Docker logs
-docker-compose logs -f loopai
+docker compose logs -f loopai
 
 # Nginx logs
 sudo tail -f /var/log/nginx/loopai-access.log
@@ -441,8 +453,8 @@ sudo journalctl -u nginx -f
 ### Kiểm tra kết nối
 
 ```bash
-# Kiểm tra port 3000
-sudo netstat -tlnp | grep 3000
+# Kiểm tra port 3345
+sudo netstat -tlnp | grep 3345
 
 # Kiểm tra Nginx
 sudo nginx -t
@@ -457,7 +469,7 @@ docker ps
 
 ```bash
 # Restart Docker container
-docker-compose restart
+docker compose restart
 
 # Restart Nginx
 sudo systemctl restart nginx

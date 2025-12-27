@@ -6,7 +6,7 @@ export default function HeaderGithub() {
   return (
     <Link
       className="contents"
-      href="https://github.com/firecrawl/open-scouts"
+      href="https://github.com/mrtinhnguyen/open-scouts"
       target="_blank"
     >
       <Button variant="tertiary">
